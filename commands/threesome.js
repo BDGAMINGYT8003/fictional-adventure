@@ -10,9 +10,9 @@ module.exports = {
                 .setDescription('The type of threesome')
                 .setRequired(false)
                 .addChoices(
-                    { name: '3 Females', value: '3 Females' },
-                    { name: '2 Females 1 Male', value: '2 Females 1 Male' },
-                    { name: '2 Males 1 Female', value: '2 Males 1 Female' }
+                    { name: '3 Females', value: 'fff' },
+                    { name: '2 Females 1 Male', value: 'ffm' },
+                    { name: '2 Males 1 Female', value: 'mmf' }
                 )
         ),
     async execute(interaction, isButton = false) {
@@ -22,24 +22,25 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        let type = isButton ? null : interaction.options?.getString('type');
-        if (!type) {
-            const types = ['3 Females', '2 Females 1 Male', '2 Males 1 Female'];
-            type = types[Math.floor(Math.random() * types.length)];
+        let originalTypeChoice = null;
+
+        if (isButton) {
+            // customId format: refresh_threesome_{type|random}
+            const parts = interaction.customId.split('_');
+            if (parts.length === 3 && parts[2] !== 'random') {
+                originalTypeChoice = parts[2];
+            }
+        } else {
+            originalTypeChoice = interaction.options?.getString('type');
         }
 
-        let endpoint;
-        switch (type) {
-            case '3 Females':
-                endpoint = 'https://purrbot.site/api/img/nsfw/threesome_fff/gif';
-                break;
-            case '2 Females 1 Male':
-                endpoint = 'https://purrbot.site/api/img/nsfw/threesome_ffm/gif';
-                break;
-            case '2 Males 1 Female':
-                endpoint = 'https://purrbot.site/api/img/nsfw/threesome_mmf/gif';
-                break;
+        let fetchType = originalTypeChoice;
+        if (!fetchType) {
+            const types = ['fff', 'ffm', 'mmf'];
+            fetchType = types[Math.floor(Math.random() * types.length)];
         }
+
+        const endpoint = `https://purrbot.site/api/img/nsfw/threesome_${fetchType}/gif`;
 
         const imageData = await fetchPurrbot(endpoint);
 
@@ -54,8 +55,13 @@ module.exports = {
 
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
+        let displayType = '';
+        if (fetchType === 'fff') displayType = '3 Females';
+        if (fetchType === 'ffm') displayType = '2 Females 1 Male';
+        if (fetchType === 'mmf') displayType = '2 Males 1 Female';
+
         const embed = new EmbedBuilder()
-            .setTitle(`🔞 ▸ NSFW Threesome Image (${type})`)
+            .setTitle(`🔞 ▸ NSFW Threesome Image (${displayType})`)
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
@@ -63,10 +69,12 @@ module.exports = {
                 iconURL: interaction.user.displayAvatarURL()
             });
 
+        const refreshId = `refresh_threesome_${originalTypeChoice || 'random'}`;
+
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('refresh_threesome')
+                    .setCustomId(refreshId)
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()

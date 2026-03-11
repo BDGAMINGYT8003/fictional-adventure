@@ -10,8 +10,8 @@ module.exports = {
                 .setDescription('The gender for the solo GIF')
                 .setRequired(false)
                 .addChoices(
-                    { name: 'Female', value: 'Female' },
-                    { name: 'Male', value: 'Male' }
+                    { name: 'Female', value: 'female' },
+                    { name: 'Male', value: 'male' }
                 )
         ),
     async execute(interaction, isButton = false) {
@@ -21,12 +21,24 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        let gender = isButton ? null : interaction.options?.getString('gender');
-        if (!gender) {
-            gender = Math.random() < 0.5 ? 'Female' : 'Male';
+        let originalGenderChoice = null;
+
+        if (isButton) {
+            // customId format: refresh_solo_{gender|random}
+            const parts = interaction.customId.split('_');
+            if (parts.length === 3 && parts[2] !== 'random') {
+                originalGenderChoice = parts[2];
+            }
+        } else {
+            originalGenderChoice = interaction.options?.getString('gender');
         }
 
-        const endpoint = gender === 'Female'
+        let fetchGender = originalGenderChoice;
+        if (!fetchGender) {
+            fetchGender = Math.random() < 0.5 ? 'female' : 'male';
+        }
+
+        const endpoint = fetchGender === 'female'
             ? 'https://purrbot.site/api/img/nsfw/solo/gif'
             : 'https://purrbot.site/api/img/nsfw/solo_male/gif';
 
@@ -43,8 +55,9 @@ module.exports = {
 
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
+        const embedTitleGender = fetchGender === 'female' ? 'Female' : 'Male';
         const embed = new EmbedBuilder()
-            .setTitle(`🔞 ▸ NSFW Solo Image (${gender})`)
+            .setTitle(`🔞 ▸ NSFW ${embedTitleGender} Solo Image`)
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
@@ -52,10 +65,12 @@ module.exports = {
                 iconURL: interaction.user.displayAvatarURL()
             });
 
+        const refreshId = `refresh_solo_${originalGenderChoice || 'random'}`;
+
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('refresh_solo')
+                    .setCustomId(refreshId)
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
