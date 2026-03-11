@@ -55,7 +55,25 @@ async function fetchAss(id = null) {
     }
 }
 
+async function fetchPurrbot(endpoint) {
+    try {
+        const response = await axios.get(endpoint, { timeout: API_TIMEOUT });
+
+        if (!response.data || response.data.error || !response.data.link) {
+            return null;
+        }
+
+        return {
+            url: response.data.link
+        };
+    } catch (error) {
+        logError(`Failed to fetch from purrbot.site: ${error.message}`);
+        return null;
+    }
+}
+
 module.exports = {
     fetchBoobs,
-    fetchAss
+    fetchAss,
+    fetchPurrbot
 };

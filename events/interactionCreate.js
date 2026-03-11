@@ -59,11 +59,9 @@ module.exports = {
             const customId = interaction.customId;
 
             try {
-                if (customId === 'refresh_boobs') {
-                    const command = client.commands.get('boobs');
-                    if (command) await command.execute(interaction, true);
-                } else if (customId === 'refresh_ass') {
-                    const command = client.commands.get('ass');
+                if (customId.startsWith('refresh_')) {
+                    const commandName = customId.split('_')[1];
+                    const command = client.commands.get(commandName);
                     if (command) await command.execute(interaction, true);
                 }
             } catch (error) {
