@@ -22,6 +22,10 @@ function logError(message) {
     console.error(`${chalk.bold.red('[ERROR]')} ${message}`);
 }
 
+function logTimeout(message) {
+    console.error(`${chalk.bold.red('[TIMEOUT]')} ${message}`);
+}
+
 function logCommand(commandName, username, userId, guildName, guildId) {
     const cmd = chalk.bold.yellow(`/${commandName}`);
     const user = chalk.blue(username);
@@ -38,5 +42,6 @@ module.exports = {
     logInfo,
     logWarn,
     logError,
+    logTimeout,
     logCommand
 };

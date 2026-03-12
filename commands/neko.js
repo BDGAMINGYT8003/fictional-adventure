@@ -33,10 +33,14 @@ module.exports = {
             imageData = await fetchABD(endpoint);
         }
 
-        if (!imageData) {
+        if (!imageData || imageData.error) {
+            let errorMsg = 'Failed to fetch image or no image found with that ID.';
+            if (imageData && imageData.error === 'TIMEOUT') {
+                errorMsg = 'API Timeout: The request took longer than 15 seconds to fulfill. Please try again later.';
+            }
             const errorEmbed = new EmbedBuilder()
                 .setTitle('❌ ▸ Error')
-                .setDescription('Failed to fetch image.')
+                .setDescription(errorMsg)
                 .setColor('Red');
 
             return await interaction.editReply({ embeds: [errorEmbed], components: [] });

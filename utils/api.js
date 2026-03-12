@@ -1,7 +1,7 @@
 const axios = require('axios');
-const { logError, logWarn, logInfo } = require('./logger');
+const { logError, logWarn, logInfo, logTimeout } = require('./logger');
 
-const API_TIMEOUT = 5000;
+const API_TIMEOUT = 15000;
 
 async function fetchBoobs(id = null) {
     try {
@@ -24,6 +24,10 @@ async function fetchBoobs(id = null) {
             url: imageUrl
         };
     } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to oboobs.ru exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
         logError(`Failed to fetch from oboobs.ru: ${error.message}`);
         return null;
     }
@@ -50,6 +54,10 @@ async function fetchAss(id = null) {
             url: imageUrl
         };
     } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to obutts.ru exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
         logError(`Failed to fetch from obutts.ru: ${error.message}`);
         return null;
     }
@@ -67,6 +75,10 @@ async function fetchPurrbot(endpoint) {
             url: response.data.link
         };
     } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to purrbot.site exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
         logError(`Failed to fetch from purrbot.site: ${error.message}`);
         return null;
     }
@@ -84,6 +96,10 @@ async function fetchWaifu(endpoint) {
             url: response.data.url
         };
     } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to waifu.pics exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
         logError(`Failed to fetch from waifu.pics: ${error.message}`);
         return null;
     }
@@ -116,6 +132,10 @@ async function fetchABD(endpoint) {
             url: targetUrl
         };
     } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to n-sfw.com (ABD) exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
         logError(`Failed to fetch from n-sfw.com (ABD): ${error.message}`);
         return null;
     }
