@@ -176,11 +176,63 @@ async function fetchWaifuIm(tag, isNsfw = true) {
     }
 }
 
+async function fetchSexcomGif() {
+    try {
+        // Fetch a random page to ensure randomized GIF delivery
+        const randomPage = Math.floor(Math.random() * 500) + 1;
+
+        const response = await axios.get('https://www.sex.com/portal/api/gifs', {
+            params: {
+                page: randomPage,
+                limit: 40,
+                order: 'likeCount',
+                "sexual-orientation": 'straight'
+            },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            timeout: API_TIMEOUT
+        });
+
+        const data = response.data?.data;
+
+        if (!data || data.length === 0) {
+            return null;
+        }
+
+        // Randomly select one item from the fetched page
+        const item = data[Math.floor(Math.random() * data.length)];
+        const pinId = item.id;
+        let uri = item.uri;
+
+        // Apply WebP to GIF conversion per the python script requirements
+        if (uri.endsWith('.webp')) {
+            uri = uri.slice(0, -4) + 'gif';
+        }
+
+        const url = `https://imagex1.sx.cdn.live${uri}`;
+        logInfo(`[fetchSexcomGif] Extracted Pin ID: ${pinId} (Page: ${randomPage})`);
+
+        return {
+            url: url,
+            id: pinId
+        };
+    } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to sex.com exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
+        logError(`Failed to fetch from sex.com: ${error.message}`);
+        return null;
+    }
+}
+
 module.exports = {
     fetchBoobs,
     fetchAss,
     fetchPurrbot,
     fetchWaifu,
     fetchABD,
-    fetchWaifuIm
+    fetchWaifuIm,
+    fetchSexcomGif
 };
