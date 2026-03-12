@@ -14,6 +14,10 @@ function logInfo(message) {
     console.log(`${chalk.cyan('[INFO]')} ${message}`);
 }
 
+function logWarn(message) {
+    console.warn(`${chalk.bold.yellow('[WARN]')} ${message}`);
+}
+
 function logError(message) {
     console.error(`${chalk.bold.red('[ERROR]')} ${message}`);
 }
@@ -32,6 +36,7 @@ module.exports = {
     logHeader,
     logSuccess,
     logInfo,
+    logWarn,
     logError,
     logCommand
 };

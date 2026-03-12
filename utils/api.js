@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { logError } = require('./logger');
+const { logError, logWarn, logInfo } = require('./logger');
 
 const API_TIMEOUT = 5000;
 
@@ -93,12 +93,27 @@ async function fetchABD(endpoint) {
     try {
         const response = await axios.get(endpoint, { timeout: API_TIMEOUT });
 
-        if (!response.data || !response.data.url) {
+        if (!response.data) {
             return null;
         }
 
+        let targetUrl = response.data.url_japan;
+        let fieldUsed = 'url_japan';
+
+        if (!targetUrl) {
+            logWarn(`url_japan missing, falling back to url_usa`);
+            targetUrl = response.data.url_usa;
+            fieldUsed = 'url_usa';
+        }
+
+        if (!targetUrl) {
+            return null;
+        }
+
+        logInfo(`[fetchABD] Successfully extracted image using field: ${fieldUsed}`);
+
         return {
-            url: response.data.url
+            url: targetUrl
         };
     } catch (error) {
         logError(`Failed to fetch from n-sfw.com (ABD): ${error.message}`);
