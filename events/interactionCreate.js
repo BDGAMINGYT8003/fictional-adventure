@@ -4,7 +4,7 @@ const { logCommand, logError } = require('../utils/logger');
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client) {
-        if (!interaction.isChatInputCommand() && !interaction.isButton()) return;
+        if (!interaction.isChatInputCommand() && !interaction.isButton() && !interaction.isAutocomplete()) return;
 
         // Shared NSFW verification check logic
         const checkNSFW = (interact) => {
@@ -26,7 +26,18 @@ module.exports = {
             return true;
         };
 
-        if (interaction.isChatInputCommand()) {
+        if (interaction.isAutocomplete()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command) return;
+
+            try {
+                if (command.autocomplete) {
+                    await command.autocomplete(interaction);
+                }
+            } catch (error) {
+                logError(`Error executing autocomplete for ${interaction.commandName}: ${error}`);
+            }
+        } else if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
 
             if (!command) {
@@ -72,6 +83,9 @@ module.exports = {
 
                     const command = client.commands.get(commandName);
                     if (command) await command.execute(interaction, true, filterOption);
+                } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_')) {
+                    const command = client.commands.get('help');
+                    if (command) await command.execute(interaction, true);
                 }
             } catch (error) {
                 logError(`Error executing button action ${customId}: ${error}`);
