@@ -8,7 +8,10 @@ module.exports = {
 
         // Shared NSFW verification check logic
         const checkNSFW = (interact) => {
-            if (!interact.channel.nsfw) {
+            // Bypass NSFW check in Direct Messages
+            if (!interact.guild) return true;
+
+            if (interact.channel && !interact.channel.nsfw) {
                 const nsfwEmbed = new EmbedBuilder()
                     .setTitle('❌ ▸ Not NSFW channel')
                     .setDescription('This command can only be used in NSFW channels. Please use this command in a channel marked as NSFW.')
@@ -48,8 +51,10 @@ module.exports = {
             } catch (error) {
                 logError(`Error executing command ${interaction.commandName}: ${error}`);
                 try {
-                    if (interaction.replied || interaction.deferred) {
+                    if (interaction.replied) {
                         await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+                    } else if (interaction.deferred) {
+                        await interaction.editReply({ content: 'There was an error while executing this command!', components: [] });
                     } else {
                         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
                     }
@@ -71,8 +76,10 @@ module.exports = {
             } catch (error) {
                 logError(`Error executing button action ${customId}: ${error}`);
                 try {
-                    if (interaction.replied || interaction.deferred) {
+                    if (interaction.replied) {
                         await interaction.followUp({ content: 'There was an error executing this interaction!', ephemeral: true });
+                    } else if (interaction.deferred) {
+                        await interaction.editReply({ content: 'There was an error executing this interaction!', components: [] });
                     } else {
                         await interaction.reply({ content: 'There was an error executing this interaction!', ephemeral: true });
                     }
