@@ -83,7 +83,7 @@ module.exports = {
 
                     const command = client.commands.get(commandName);
                     if (command) await command.execute(interaction, true, filterOption);
-                } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_') || customId === 'help_search_modal_btn') {
+                } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_') || customId.startsWith('help_search_modal_btn')) {
                     const command = client.commands.get('help');
                     if (command) await command.execute(interaction, true);
                 }
@@ -103,7 +103,7 @@ module.exports = {
             if (!checkNSFW(interaction)) return;
             const customId = interaction.customId;
             try {
-                if (customId === 'help_search_modal') {
+                if (customId.startsWith('help_search_modal')) {
                     const command = client.commands.get('help');
                     if (command) await command.execute(interaction, false, true);
                 }

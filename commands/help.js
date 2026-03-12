@@ -40,9 +40,12 @@ module.exports = {
     },
 
     async execute(interaction, isButton = false, isModal = false) {
-        if (isButton && interaction.customId === 'help_search_modal_btn') {
+        if (isButton && interaction.customId.startsWith('help_search_modal_btn')) {
+            const parts = interaction.customId.split('_');
+            const sourcePage = parts[4] || 1; // help_search_modal_btn_X
+
             const modal = new ModalBuilder()
-                .setCustomId('help_search_modal')
+                .setCustomId(`help_search_modal_${sourcePage}`)
                 .setTitle('Search for a Command');
 
             const searchInput = new TextInputBuilder()
@@ -77,6 +80,9 @@ module.exports = {
                 targetCommandName = parts.slice(2).join('_');
             }
         } else if (isModal) {
+            const parts = interaction.customId.split('_');
+            page = parseInt(parts[3], 10) || 1; // help_search_modal_X
+
             const query = interaction.fields.getTextInputValue('search_query').toLowerCase();
             let bestMatch = null;
             let lowestDistance = Infinity;
@@ -109,7 +115,16 @@ module.exports = {
                     .setTitle('❌ ▸ Error')
                     .setDescription(`Could not find information for command \`${targetCommandName}\`.`)
                     .setColor('Red');
-                return await interaction.editReply({ embeds: [errorEmbed], components: [] });
+
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`help_page_${page}`)
+                            .setLabel('🔙 ▸ Back to Directory')
+                            .setStyle(ButtonStyle.Secondary)
+                    );
+
+                return await interaction.editReply({ embeds: [errorEmbed], components: [row] });
             }
 
             const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
@@ -184,7 +199,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
                 .setDisabled(page === 1),
             new ButtonBuilder()
-                .setCustomId('help_search_modal_btn')
+                .setCustomId(`help_search_modal_btn_${page}`)
                 .setLabel('🔍 ▸ Search')
                 .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
