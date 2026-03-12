@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchBoobs } = require('../utils/api');
+const { fetchBoobs, fetchWaifuIm } = require('../utils/api');
+const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,7 +20,23 @@ module.exports = {
         }
 
         const id = isButton ? null : interaction.options?.getInteger('id');
-        const imageData = await fetchBoobs(id);
+        const useOboobsOnly = id !== null;
+
+        let source = 'oboobs';
+        if (!useOboobsOnly) {
+            const sources = ['oboobs', 'waifuim'];
+            source = sources[Math.floor(Math.random() * sources.length)];
+        }
+
+        let imageData = null;
+
+        if (source === 'oboobs') {
+            logInfo(`[/boobs] Selected API Source: oboobs.ru (ID: ${id || 'random'})`);
+            imageData = await fetchBoobs(id);
+        } else if (source === 'waifuim') {
+            logInfo(`[/boobs] Selected API Source: Waifu.im (tag: oppai)`);
+            imageData = await fetchWaifuIm('oppai');
+        }
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image or no image found with that ID.';

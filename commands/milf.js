@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchABD } = require('../utils/api');
+const { fetchABD, fetchWaifuIm } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -13,9 +13,19 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const endpoint = 'https://api.n-sfw.com/nsfw/milf';
-        logInfo(`[/milf] Selected API Source: ABD (${endpoint})`);
-        const imageData = await fetchABD(endpoint);
+        const sources = ['abd', 'waifuim'];
+        const source = sources[Math.floor(Math.random() * sources.length)];
+
+        let imageData = null;
+
+        if (source === 'abd') {
+            const endpoint = 'https://api.n-sfw.com/nsfw/milf';
+            logInfo(`[/milf] Selected API Source: ABD (${endpoint})`);
+            imageData = await fetchABD(endpoint);
+        } else if (source === 'waifuim') {
+            logInfo(`[/milf] Selected API Source: Waifu.im (tag: milf)`);
+            imageData = await fetchWaifuIm('milf');
+        }
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image or no image found with that ID.';

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchPurrbot, fetchWaifu, fetchABD } = require('../utils/api');
+const { fetchPurrbot, fetchWaifu, fetchABD, fetchWaifuIm } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -13,7 +13,7 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const sources = ['purrbot', 'waifu', 'abd'];
+        const sources = ['purrbot', 'waifu', 'abd', 'waifuim'];
         const source = sources[Math.floor(Math.random() * sources.length)];
 
         let imageData = null;
@@ -30,6 +30,9 @@ module.exports = {
             const endpoint = 'https://api.n-sfw.com/nsfw/blowjob';
             logInfo(`[/blowjob] Selected API Source: ABD (${endpoint})`);
             imageData = await fetchABD(endpoint);
+        } else if (source === 'waifuim') {
+            logInfo(`[/blowjob] Selected API Source: Waifu.im (tag: oral)`);
+            imageData = await fetchWaifuIm('oral');
         }
 
         if (!imageData || imageData.error) {

@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchWaifu, fetchWaifuIm } = require('../utils/api');
+const { fetchWaifuIm } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('waifu')
-        .setDescription('Delivers a random Waifu image'),
+        .setName('ero')
+        .setDescription('Delivers a random Ero image'),
     async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
@@ -13,19 +13,8 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const sources = ['waifupics', 'waifuim'];
-        const source = sources[Math.floor(Math.random() * sources.length)];
-
-        let imageData = null;
-
-        if (source === 'waifupics') {
-            const endpoint = 'https://api.waifu.pics/nsfw/waifu';
-            logInfo(`[/waifu] Selected API Source: Waifu.pics (${endpoint})`);
-            imageData = await fetchWaifu(endpoint);
-        } else if (source === 'waifuim') {
-            logInfo(`[/waifu] Selected API Source: Waifu.im (tag: waifu)`);
-            imageData = await fetchWaifuIm('waifu', true);
-        }
+        logInfo(`[/ero] Selected API Source: Waifu.im (tag: ero)`);
+        const imageData = await fetchWaifuIm('ero', true);
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image or no image found with that ID.';
@@ -43,7 +32,7 @@ module.exports = {
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
         const embed = new EmbedBuilder()
-            .setTitle('🔞 ▸ NSFW Waifu Image')
+            .setTitle('🔞 ▸ NSFW Ero Image')
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
@@ -54,7 +43,7 @@ module.exports = {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('refresh_waifu')
+                    .setCustomId('refresh_ero')
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()

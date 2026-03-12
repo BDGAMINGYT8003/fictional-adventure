@@ -141,10 +141,46 @@ async function fetchABD(endpoint) {
     }
 }
 
+async function fetchWaifuIm(tag, isNsfw = true) {
+    try {
+        const response = await axios.get('https://api.waifu.im/images', {
+            params: {
+                IncludedTags: tag,
+                IsNsfw: isNsfw ? 'True' : 'False'
+            },
+            headers: {
+                'Authorization': `ApiKey ${process.env.WAIFU_IM_KEY}`,
+                'Accept-Version': 'v7'
+            },
+            timeout: API_TIMEOUT
+        });
+
+        if (!response.data || !response.data.items || response.data.items.length === 0) {
+            return null;
+        }
+
+        return {
+            url: response.data.items[0].url
+        };
+    } catch (error) {
+        if (error.response && error.response.status === 401) {
+            logError('[AUTH ERROR] Waifu.im Key is invalid or expired');
+            return null;
+        }
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to waifu.im exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
+        logError(`Failed to fetch from waifu.im: ${error.message}`);
+        return null;
+    }
+}
+
 module.exports = {
     fetchBoobs,
     fetchAss,
     fetchPurrbot,
     fetchWaifu,
-    fetchABD
+    fetchABD,
+    fetchWaifuIm
 };

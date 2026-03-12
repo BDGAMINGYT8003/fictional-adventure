@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchAss, fetchABD } = require('../utils/api');
+const { fetchAss, fetchABD, fetchWaifuIm } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -26,7 +26,7 @@ module.exports = {
 
         let source = 'obutts';
         if (!useObuttsOnly) {
-            const sources = ['obutts', 'abd'];
+            const sources = ['obutts', 'abd', 'waifuim'];
             source = sources[Math.floor(Math.random() * sources.length)];
         }
 
@@ -39,6 +39,9 @@ module.exports = {
             const endpoint = 'https://api.n-sfw.com/nsfw/ass';
             logInfo(`[/ass] Selected API Source: ABD (${endpoint})`);
             imageData = await fetchABD(endpoint);
+        } else if (source === 'waifuim') {
+            logInfo(`[/ass] Selected API Source: Waifu.im (tag: ass)`);
+            imageData = await fetchWaifuIm('ass');
         }
 
         if (!imageData || imageData.error) {
