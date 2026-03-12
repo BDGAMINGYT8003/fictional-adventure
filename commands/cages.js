@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchPurrbot, fetchABD } = require('../utils/api');
+const { fetchABD } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('yuri')
-        .setDescription('Delivers a random Yuri (lesbian) Image/GIF'),
+        .setName('cages')
+        .setDescription('Delivers a random Cages image'),
     async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
@@ -13,20 +13,9 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const sources = ['purrbot', 'abd'];
-        const source = sources[Math.floor(Math.random() * sources.length)];
-
-        let imageData = null;
-
-        if (source === 'purrbot') {
-            const endpoint = 'https://purrbot.site/api/img/nsfw/yuri/gif';
-            logInfo(`[/yuri] Selected API Source: Purrbot (${endpoint})`);
-            imageData = await fetchPurrbot(endpoint);
-        } else if (source === 'abd') {
-            const endpoint = 'https://api.n-sfw.com/nsfw/yuri';
-            logInfo(`[/yuri] Selected API Source: ABD (${endpoint})`);
-            imageData = await fetchABD(endpoint);
-        }
+        const endpoint = 'https://api.n-sfw.com/nsfw/cages';
+        logInfo(`[/cages] Selected API Source: ABD (${endpoint})`);
+        const imageData = await fetchABD(endpoint);
 
         if (!imageData) {
             const errorEmbed = new EmbedBuilder()
@@ -40,7 +29,7 @@ module.exports = {
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
         const embed = new EmbedBuilder()
-            .setTitle('🔞 ▸ NSFW Yuri Image')
+            .setTitle('🔞 ▸ NSFW Cages Image')
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
@@ -51,7 +40,7 @@ module.exports = {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('refresh_yuri')
+                    .setCustomId('refresh_cages')
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()

@@ -1,13 +1,14 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchPurrbot } = require('../utils/api');
+const { fetchPurrbot, fetchABD } = require('../utils/api');
+const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('solo')
-        .setDescription('Delivers a random solo masturbation GIF')
+        .setDescription('Delivers a random solo masturbation Image/GIF')
         .addStringOption(option =>
             option.setName('gender')
-                .setDescription('The gender for the solo GIF')
+                .setDescription('The gender for the solo Image/GIF')
                 .setRequired(false)
                 .addChoices(
                     { name: 'Female', value: 'female' },
@@ -38,11 +39,27 @@ module.exports = {
             fetchGender = Math.random() < 0.5 ? 'female' : 'male';
         }
 
-        const endpoint = fetchGender === 'female'
-            ? 'https://purrbot.site/api/img/nsfw/solo/gif'
-            : 'https://purrbot.site/api/img/nsfw/solo_male/gif';
+        let imageData = null;
 
-        const imageData = await fetchPurrbot(endpoint);
+        if (fetchGender === 'female') {
+            const sources = ['purrbot', 'abd'];
+            const source = sources[Math.floor(Math.random() * sources.length)];
+
+            if (source === 'purrbot') {
+                const endpoint = 'https://purrbot.site/api/img/nsfw/solo/gif';
+                logInfo(`[/solo] Selected API Source: Purrbot Female (${endpoint})`);
+                imageData = await fetchPurrbot(endpoint);
+            } else if (source === 'abd') {
+                const endpoint = 'https://api.n-sfw.com/nsfw/masturbation';
+                logInfo(`[/solo] Selected API Source: ABD Masturbation (${endpoint})`);
+                imageData = await fetchABD(endpoint);
+            }
+        } else {
+            // Male only uses Purrbot
+            const endpoint = 'https://purrbot.site/api/img/nsfw/solo_male/gif';
+            logInfo(`[/solo] Selected API Source: Purrbot Male (${endpoint})`);
+            imageData = await fetchPurrbot(endpoint);
+        }
 
         if (!imageData) {
             const errorEmbed = new EmbedBuilder()

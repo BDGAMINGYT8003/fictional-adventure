@@ -1,10 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchPurrbot } = require('../utils/api');
+const { fetchPurrbot, fetchWaifu, fetchABD } = require('../utils/api');
+const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('neko')
-        .setDescription('Delivers a random Neko (gif or img)'),
+        .setDescription('Delivers a random Neko image/gif'),
     async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
@@ -12,9 +13,25 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const type = Math.random() < 0.5 ? 'gif' : 'img';
-        const endpoint = `https://purrbot.site/api/img/nsfw/neko/${type}`;
-        const imageData = await fetchPurrbot(endpoint);
+        const sources = ['purrbot', 'waifu', 'abd'];
+        const source = sources[Math.floor(Math.random() * sources.length)];
+
+        let imageData = null;
+
+        if (source === 'purrbot') {
+            const type = Math.random() < 0.5 ? 'gif' : 'img';
+            const endpoint = `https://purrbot.site/api/img/nsfw/neko/${type}`;
+            logInfo(`[/neko] Selected API Source: Purrbot (${endpoint})`);
+            imageData = await fetchPurrbot(endpoint);
+        } else if (source === 'waifu') {
+            const endpoint = 'https://api.waifu.pics/nsfw/neko';
+            logInfo(`[/neko] Selected API Source: Waifu.pics (${endpoint})`);
+            imageData = await fetchWaifu(endpoint);
+        } else if (source === 'abd') {
+            const endpoint = 'https://api.n-sfw.com/nsfw/neko';
+            logInfo(`[/neko] Selected API Source: ABD (${endpoint})`);
+            imageData = await fetchABD(endpoint);
+        }
 
         if (!imageData) {
             const errorEmbed = new EmbedBuilder()

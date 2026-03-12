@@ -72,8 +72,44 @@ async function fetchPurrbot(endpoint) {
     }
 }
 
+async function fetchWaifu(endpoint) {
+    try {
+        const response = await axios.get(endpoint, { timeout: API_TIMEOUT });
+
+        if (!response.data || !response.data.url) {
+            return null;
+        }
+
+        return {
+            url: response.data.url
+        };
+    } catch (error) {
+        logError(`Failed to fetch from waifu.pics: ${error.message}`);
+        return null;
+    }
+}
+
+async function fetchABD(endpoint) {
+    try {
+        const response = await axios.get(endpoint, { timeout: API_TIMEOUT });
+
+        if (!response.data || !response.data.url) {
+            return null;
+        }
+
+        return {
+            url: response.data.url
+        };
+    } catch (error) {
+        logError(`Failed to fetch from n-sfw.com (ABD): ${error.message}`);
+        return null;
+    }
+}
+
 module.exports = {
     fetchBoobs,
     fetchAss,
-    fetchPurrbot
+    fetchPurrbot,
+    fetchWaifu,
+    fetchABD
 };

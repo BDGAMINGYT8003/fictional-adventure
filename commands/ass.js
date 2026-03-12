@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchAss } = require('../utils/api');
+const { fetchAss, fetchABD } = require('../utils/api');
+const { logInfo } = require('../utils/logger');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,7 +8,7 @@ module.exports = {
         .setDescription('Fetches a random or specific NSFW Ass image')
         .addIntegerOption(option =>
             option.setName('id')
-                .setDescription('The specific ID of the image to fetch')
+                .setDescription('The specific ID of the image to fetch (only for obutts)')
                 .setRequired(false)
         ),
     async execute(interaction, isButton = false) {
@@ -19,7 +20,26 @@ module.exports = {
         }
 
         const id = isButton ? null : interaction.options?.getInteger('id');
-        const imageData = await fetchAss(id);
+
+        // If ID is specified, we must use obutts
+        const useObuttsOnly = id !== null;
+
+        let source = 'obutts';
+        if (!useObuttsOnly) {
+            const sources = ['obutts', 'abd'];
+            source = sources[Math.floor(Math.random() * sources.length)];
+        }
+
+        let imageData = null;
+
+        if (source === 'obutts') {
+            logInfo(`[/ass] Selected API Source: obutts.ru (ID: ${id || 'random'})`);
+            imageData = await fetchAss(id);
+        } else if (source === 'abd') {
+            const endpoint = 'https://api.n-sfw.com/nsfw/ass';
+            logInfo(`[/ass] Selected API Source: ABD (${endpoint})`);
+            imageData = await fetchABD(endpoint);
+        }
 
         if (!imageData) {
             const errorEmbed = new EmbedBuilder()
