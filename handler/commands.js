@@ -6,7 +6,10 @@ const { logSuccess, logError, logInfo } = require('../utils/logger');
 module.exports = async (client) => {
     const commandsPath = path.join(__dirname, '..', 'commands');
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-    const commandsArray = [];
+
+    const globalCommands = [];
+    const guildCommands = [];
+    const TESTING_GUILD_ID = '1301072065880915991';
 
     for (const file of commandFiles) {
         try {
@@ -15,8 +18,14 @@ module.exports = async (client) => {
 
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
-                commandsArray.push(command.data.toJSON());
-                logSuccess(`Loaded Command: ${file}`);
+
+                if (command.testOnly) {
+                    guildCommands.push(command.data.toJSON());
+                    logSuccess(`Loaded Guild Command: ${file}`);
+                } else {
+                    globalCommands.push(command.data.toJSON());
+                    logSuccess(`Loaded Global Command: ${file}`);
+                }
             } else {
                 logError(`The command at ${filePath} is missing a required "data" or "execute" property.`);
             }
@@ -30,12 +39,22 @@ module.exports = async (client) => {
     try {
         logInfo('Started refreshing application (/) commands.');
 
+        // Register Global Commands
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
-            { body: commandsArray },
+            { body: globalCommands },
         );
+        logSuccess(`Successfully reloaded ${globalCommands.length} global application (/) commands.`);
 
-        logSuccess('Successfully reloaded application (/) commands.');
+        // Register Guild Commands
+        if (TESTING_GUILD_ID) {
+            await rest.put(
+                Routes.applicationGuildCommands(process.env.CLIENT_ID, TESTING_GUILD_ID),
+                { body: guildCommands },
+            );
+            logSuccess(`Successfully reloaded ${guildCommands.length} guild-specific application (/) commands.`);
+        }
+
     } catch (error) {
         logError(`Failed to reload application (/) commands: ${error.message}`);
     }
