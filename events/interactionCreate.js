@@ -66,9 +66,12 @@ module.exports = {
 
             try {
                 if (customId.startsWith('refresh_')) {
-                    const commandName = customId.split('_')[1];
+                    const parts = customId.split('_');
+                    const commandName = parts[1];
+                    const filterOption = parts.slice(2).join('_').replace(/_/g, ' ');
+
                     const command = client.commands.get(commandName);
-                    if (command) await command.execute(interaction, true);
+                    if (command) await command.execute(interaction, true, filterOption);
                 }
             } catch (error) {
                 logError(`Error executing button action ${customId}: ${error}`);

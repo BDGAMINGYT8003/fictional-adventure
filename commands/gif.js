@@ -1,20 +1,28 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchSexcomGif } = require('../utils/api');
+const { fetchSexcom } = require('../utils/api');
+
+const NICHES = [
+    'Amateur', 'Anal', 'Asian', 'Big Tits', 'Blonde', 'Blowjob', 'Brunette', 'Creampie', 'Cumshot', 'Hardcore', 'Latina', 'Lesbian', 'MILF', 'Masturbation', 'Threesome',
+    'Ass', 'BBW', 'BDSM', 'Double Penetration', 'Ebony', 'Female Ejaculation', 'Fisting', 'Footjob', 'Gangbang', 'Hairy', 'Handjob', 'Hentai', 'Lingerie', 'Public Sex', 'Pussy', 'Toys'
+];
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('gif')
         .setDescription('Delivers a random NSFW GIF')
         .setIntegrationTypes(0, 1)
-        .setContexts(0, 1, 2),
-    async execute(interaction, isButton = false) {
+        .setContexts(0, 1, 2)
+        .setNSFW(true),
+    async execute(interaction, isButton = false, savedNiche = null) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
 
-        const imageData = await fetchSexcomGif();
+        const niche = savedNiche || NICHES[Math.floor(Math.random() * NICHES.length)];
+
+        const imageData = await fetchSexcom(niche);
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image.';
@@ -32,7 +40,7 @@ module.exports = {
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
         const embed = new EmbedBuilder()
-            .setTitle('🔞 ▸ NSFW GIF')
+            .setTitle(`🔞 ▸ NSFW GIF: ${niche}`)
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
@@ -40,15 +48,17 @@ module.exports = {
                 iconURL: interaction.user.displayAvatarURL()
             });
 
+        const watchUrl = `https://www.sex.com/pin/${imageData.id}/`;
+
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('refresh_gif')
+                    .setCustomId(`refresh_gif_${niche.replace(/\s/g, '_')}`)
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setLabel('📎 ▸ Link')
-                    .setURL(imageData.url)
+                    .setURL(watchUrl)
                     .setStyle(ButtonStyle.Link)
             );
 

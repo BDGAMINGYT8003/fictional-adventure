@@ -176,46 +176,43 @@ async function fetchWaifuIm(tag, isNsfw = true) {
     }
 }
 
-async function fetchSexcomGif() {
+async function fetchSexcom(niche) {
     try {
-        // Fetch a random page to ensure randomized GIF delivery
-        const randomPage = Math.floor(Math.random() * 500) + 1;
-
-        const response = await axios.get('https://www.sex.com/portal/api/gifs', {
-            params: {
-                page: randomPage,
-                limit: 40,
-                order: 'likeCount',
-                "sexual-orientation": 'straight'
-            },
+        // sex.com provides pages of results, fetch a random page from top 10 for variety
+        const randomPage = Math.floor(Math.random() * 10) + 1;
+        const response = await axios.get('https://www.sex.com/portal/api/gifs/search', {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                // Must mock a user-agent to bypass 400 errors
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            },
+            params: {
+                'sexual-orientation': 'straight',
+                'order': 'likeCount',
+                'search': niche,
+                'page': randomPage,
+                'limit': 40
             },
             timeout: API_TIMEOUT
         });
-
-        const data = response.data?.data;
-
-        if (!data || data.length === 0) {
+        if (!response.data || !response.data.data || response.data.data.length === 0) {
             return null;
         }
-
-        // Randomly select one item from the fetched page
-        const item = data[Math.floor(Math.random() * data.length)];
-        const pinId = item.id;
-        let uri = item.uri;
-
-        // Apply WebP to GIF conversion per the python script requirements
-        if (uri.endsWith('.webp')) {
-            uri = uri.slice(0, -4) + 'gif';
+        const items = response.data.data;
+        const randomItem = items[Math.floor(Math.random() * items.length)];
+        let urlPath = randomItem.uri;
+        if (!urlPath) {
+            return null;
         }
-
-        const url = `https://imagex1.sx.cdn.live${uri}`;
-        logInfo(`[fetchSexcomGif] Extracted Pin ID: ${pinId} (Page: ${randomPage})`);
-
+        // Native display of animated GIFs requirement:
+        // Convert the webp thumbnail path to gif
+        if (urlPath.endsWith('.webp')) {
+            urlPath = urlPath.slice(0, -5) + '.gif';
+        }
+        // Map the root URL domain for the CDN as per the Python extractor
+        const targetUrl = 'https://imagex1.sx.cdn.live' + urlPath;
         return {
-            url: url,
-            id: pinId
+            id: randomItem.id,
+            url: targetUrl
         };
     } catch (error) {
         if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
@@ -234,5 +231,5 @@ module.exports = {
     fetchWaifu,
     fetchABD,
     fetchWaifuIm,
-    fetchSexcomGif
+    fetchSexcom
 };
