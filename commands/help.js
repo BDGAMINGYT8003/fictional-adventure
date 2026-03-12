@@ -1,4 +1,20 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { logInfo } = require('../utils/logger');
+
+function levenshteinDistance(s, t) {
+    if (!s.length) return t.length;
+    if (!t.length) return s.length;
+    const arr = [];
+    for (let i = 0; i <= t.length; i++) { arr[i] = [i]; }
+    for (let j = 0; j <= s.length; j++) { arr[0][j] = j; }
+    for (let i = 1; i <= t.length; i++) {
+        for (let j = 1; j <= s.length; j++) {
+            const cost = t[i - 1] === s[j - 1] ? 0 : 1;
+            arr[i][j] = Math.min(arr[i - 1][j] + 1, arr[i][j - 1] + 1, arr[i - 1][j - 1] + cost);
+        }
+    }
+    return arr[t.length][s.length];
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -23,10 +39,26 @@ module.exports = {
         );
     },
 
-    async execute(interaction, isButton = false) {
-        if (!isButton) {
+    async execute(interaction, isButton = false, isModal = false) {
+        if (isButton && interaction.customId === 'help_search_modal_btn') {
+            const modal = new ModalBuilder()
+                .setCustomId('help_search_modal')
+                .setTitle('Search for a Command');
+
+            const searchInput = new TextInputBuilder()
+                .setCustomId('search_query')
+                .setLabel('Enter command name...')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(searchInput));
+            await interaction.showModal(modal);
+            return;
+        }
+
+        if (!isButton && !isModal) {
             await interaction.deferReply();
-        } else {
+        } else if (isButton || isModal) {
             await interaction.deferUpdate();
         }
 
@@ -37,12 +69,32 @@ module.exports = {
         let page = 1;
 
         if (isButton) {
-            // customId format: help_page_X or help_command_NAME
             const parts = interaction.customId.split('_');
             if (parts[1] === 'page') {
                 page = parseInt(parts[2], 10);
+                logInfo(`[HELP] User navigated back to Page ${page}`);
             } else if (parts[1] === 'command') {
                 targetCommandName = parts.slice(2).join('_');
+            }
+        } else if (isModal) {
+            const query = interaction.fields.getTextInputValue('search_query').toLowerCase();
+            let bestMatch = null;
+            let lowestDistance = Infinity;
+
+            for (const cmd of commands) {
+                const name = cmd.data.name;
+                const distance = levenshteinDistance(query, name);
+                if (distance < lowestDistance) {
+                    lowestDistance = distance;
+                    bestMatch = name;
+                }
+            }
+
+            // Allow some fuzziness, threshold of 3 edits max
+            if (bestMatch && lowestDistance <= 3) {
+                targetCommandName = bestMatch;
+            } else {
+                targetCommandName = query; // will fail below and show error
             }
         } else {
             targetCommandName = interaction.options.getString('command');
@@ -81,10 +133,16 @@ module.exports = {
 
             embed.addFields({ name: 'Parameters', value: paramsText });
 
+            const cmdIndex = commands.findIndex(c => c.data.name === command.data.name);
+            const ITEMS_PER_PAGE = 8;
+            const returnPage = Math.floor(cmdIndex / ITEMS_PER_PAGE) + 1;
+
+            logInfo(`[HELP] User navigated to Command: ${command.data.name}`);
+
             const row = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId('help_page_1') // Go back to directory
+                        .setCustomId(`help_page_${returnPage}`) // Dynamic Return Page
                         .setLabel('🔙 ▸ Back to Directory')
                         .setStyle(ButtonStyle.Secondary)
                 );
@@ -94,7 +152,7 @@ module.exports = {
 
         // Mode A: General Directory
         const ITEMS_PER_PAGE = 8;
-        const totalPages = Math.ceil(commands.length / ITEMS_PER_PAGE);
+        const totalPages = Math.ceil(commands.length / ITEMS_PER_PAGE) || 1;
 
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
@@ -107,7 +165,7 @@ module.exports = {
             .setTitle('🔞 ▸ Command Directory')
             .setColor(`#${randomColor}`)
             .setFooter({
-                text: `Page ${page} of ${totalPages} • ${interaction.user.username} | Today at ${new Date().toLocaleTimeString()}`,
+                text: `Page ${page} of ${totalPages} | Today at ${new Date().toLocaleTimeString()}`,
                 iconURL: interaction.user.displayAvatarURL()
             });
 
@@ -125,6 +183,10 @@ module.exports = {
                 .setLabel('◀ Previous')
                 .setStyle(ButtonStyle.Primary)
                 .setDisabled(page === 1),
+            new ButtonBuilder()
+                .setCustomId('help_search_modal_btn')
+                .setLabel('🔍 ▸ Search')
+                .setStyle(ButtonStyle.Secondary),
             new ButtonBuilder()
                 .setCustomId(`help_page_${page + 1}`)
                 .setLabel('Next ▶')

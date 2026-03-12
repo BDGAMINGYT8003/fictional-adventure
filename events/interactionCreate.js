@@ -4,7 +4,7 @@ const { logCommand, logError } = require('../utils/logger');
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client) {
-        if (!interaction.isChatInputCommand() && !interaction.isButton() && !interaction.isAutocomplete()) return;
+        if (!interaction.isChatInputCommand() && !interaction.isButton() && !interaction.isAutocomplete() && !interaction.isModalSubmit()) return;
 
         // Shared NSFW verification check logic
         const checkNSFW = (interact) => {
@@ -83,7 +83,7 @@ module.exports = {
 
                     const command = client.commands.get(commandName);
                     if (command) await command.execute(interaction, true, filterOption);
-                } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_')) {
+                } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_') || customId === 'help_search_modal_btn') {
                     const command = client.commands.get('help');
                     if (command) await command.execute(interaction, true);
                 }
@@ -97,6 +97,26 @@ module.exports = {
                     }
                 } catch (innerError) {
                     logError(`Failed to send error message to Discord for button: ${innerError.message}`);
+                }
+            }
+        } else if (interaction.isModalSubmit()) {
+            if (!checkNSFW(interaction)) return;
+            const customId = interaction.customId;
+            try {
+                if (customId === 'help_search_modal') {
+                    const command = client.commands.get('help');
+                    if (command) await command.execute(interaction, false, true);
+                }
+            } catch (error) {
+                logError(`Error executing modal submit ${customId}: ${error}`);
+                try {
+                    if (interaction.replied || interaction.deferred) {
+                        await interaction.followUp({ content: 'There was an error executing this interaction!', ephemeral: true });
+                    } else {
+                        await interaction.reply({ content: 'There was an error executing this interaction!', ephemeral: true });
+                    }
+                } catch (innerError) {
+                    logError(`Failed to send error message to Discord for modal: ${innerError.message}`);
                 }
             }
         }
