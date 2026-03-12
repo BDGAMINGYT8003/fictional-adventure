@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { fetchSexcom } = require('../utils/api');
+const { logInfo } = require('../utils/logger');
 
 const NICHES = [
     'Amateur', 'Anal', 'Asian', 'Big Tits', 'Blonde', 'Blowjob', 'Brunette', 'Creampie', 'Cumshot', 'Hardcore', 'Latina', 'Lesbian', 'MILF', 'Masturbation', 'Threesome',
@@ -13,16 +14,20 @@ module.exports = {
         .setIntegrationTypes(0, 1)
         .setContexts(0, 1, 2)
         .setNSFW(true),
-    async execute(interaction, isButton = false, savedNiche = null) {
+    async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
 
-        const niche = savedNiche || NICHES[Math.floor(Math.random() * NICHES.length)];
+        const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
 
         const imageData = await fetchSexcom(niche);
+
+        if (imageData && imageData.id) {
+            logInfo(`[/gif] Fetched GIF - Pin ID: ${imageData.id}`);
+        }
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image.';
@@ -40,11 +45,11 @@ module.exports = {
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
         const embed = new EmbedBuilder()
-            .setTitle(`🔞 ▸ NSFW GIF: ${niche}`)
+            .setTitle(`🔞 ▸ NSFW GIF`)
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
-                text: `${interaction.user.username} | Today at ${new Date().toLocaleTimeString()} • Pin ID: ${imageData.id}`,
+                text: `${interaction.user.username} | Today at ${new Date().toLocaleTimeString()}`,
                 iconURL: interaction.user.displayAvatarURL()
             });
 
@@ -53,7 +58,7 @@ module.exports = {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`refresh_gif_${niche.replace(/\s/g, '_')}`)
+                    .setCustomId(`refresh_gif`)
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
