@@ -8,7 +8,12 @@ module.exports = {
 
         // Shared NSFW verification check logic
         const checkNSFW = (interact) => {
-            if (!interact.guild) return true; // Bypass NSFW checks in DMs
+            const commandName = interact.commandName || (interact.customId ? interact.customId.split('_')[1] : null);
+            const safeCommands = ['help', 'invite', 'ping', 'intro'];
+
+            // Allow safe commands everywhere, bypass in DMs
+            if (safeCommands.includes(commandName) || safeCommands.some(c => interact.customId && interact.customId.startsWith(c))) return true;
+            if (!interact.guild) return true;
 
             if (!interact.channel.nsfw) {
                 const nsfwEmbed = new EmbedBuilder()
@@ -86,6 +91,25 @@ module.exports = {
                 } else if (customId.startsWith('help_page_') || customId.startsWith('help_command_') || customId.startsWith('help_search_modal_btn')) {
                     const command = client.commands.get('help');
                     if (command) await command.execute(interaction, true);
+                } else if (customId.startsWith('ping_page_')) {
+                    const command = client.commands.get('ping');
+                    const targetPage = parseInt(customId.split('_')[2], 10);
+                    if (command) await command.execute(interaction, true, targetPage);
+                } else if (customId.startsWith('intro_')) {
+                    const isFeatures = customId === 'intro_features';
+                    const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+                    const title = isFeatures ? '🔍 ▸ Core Features' : '🛠️ ▸ Support & Usage';
+                    const description = isFeatures
+                        ? '• **Massive Multi-API Network**: Scrapes from 7 major backends (`n-sfw.com`, `purrbot`, `oboobs`, `waifu.im`, etc.)\n• **Dynamic Help System**: Run `/help` to use our fuzzy-search modal to locate the exact category you need.\n• **Native Discord Media**: Auto-converts WebP animations into native MP4/GIFs for inline chat playback.'
+                        : '• **Global Access**: Works seamlessly in DMs and NSFW-marked Guild channels.\n• **Invite**: Type `/invite` to generate an OAuth2 link with precisely calculated permissions.\n• **Performance**: Type `/ping` to see advanced diagnostic memory readouts and latency metrics.';
+
+                    const ephemeralEmbed = new EmbedBuilder()
+                        .setTitle(title)
+                        .setDescription(description)
+                        .setColor(`#${randomColor}`);
+
+                    await interaction.reply({ embeds: [ephemeralEmbed], ephemeral: true });
                 }
             } catch (error) {
                 logError(`Error executing button action ${customId}: ${error}`);
