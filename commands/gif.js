@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchSexcom } = require('../utils/api');
+const { fetchSexcom, fetchPorngifs } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 const NICHES = [
@@ -21,12 +21,27 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
+        let imageData = null;
+        let watchUrl = null;
 
-        const imageData = await fetchSexcom(niche);
+        // Randomly pick a source: 0 = Sex.com, 1 = Porngifs.com
+        const sourcePick = Math.floor(Math.random() * 2);
 
-        if (imageData && imageData.id) {
-            logInfo(`[/gif] Fetched GIF - Pin ID: ${imageData.id}`);
+        if (sourcePick === 0) {
+            const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
+            logInfo(`[/gif] Selected API Source: Sex.com (niche: ${niche})`);
+            imageData = await fetchSexcom(niche);
+            if (imageData && imageData.id) {
+                watchUrl = `https://www.sex.com/pin/${imageData.id}/`;
+                logInfo(`[/gif] Fetched GIF - Pin ID: ${imageData.id}`);
+            }
+        } else {
+            logInfo(`[/gif] Selected API Source: Porngifs.com`);
+            imageData = await fetchPorngifs();
+            if (imageData && imageData.id) {
+                watchUrl = `https://porngifs.com/gif/${imageData.id}`;
+                logInfo(`[/gif] Fetched GIF - Src ID: ${imageData.id}`);
+            }
         }
 
         if (!imageData || imageData.error) {
@@ -52,8 +67,6 @@ module.exports = {
                 text: `${interaction.user.username} | Today at ${new Date().toLocaleTimeString()}`,
                 iconURL: interaction.user.displayAvatarURL()
             });
-
-        const watchUrl = `https://www.sex.com/pin/${imageData.id}/`;
 
         const row = new ActionRowBuilder()
             .addComponents(

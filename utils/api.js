@@ -224,6 +224,23 @@ async function fetchSexcom(niche) {
     }
 }
 
+async function fetchPorngifs() {
+    try {
+        // Bypass the AJAX endpoint and access the CDN inventory directly for full coverage (1 to 39239)
+        const randomId = Math.floor(Math.random() * 39239) + 1;
+        const targetUrl = `https://cdn.porngifs.com/img/${randomId}`;
+
+        return {
+            id: randomId.toString(),
+            url: targetUrl,
+            source: 'porngifs'
+        };
+    } catch (error) {
+        logError(`Failed to generate from porngifs CDN: ${error.message}`);
+        return null;
+    }
+}
+
 module.exports = {
     fetchBoobs,
     fetchAss,
@@ -231,5 +248,6 @@ module.exports = {
     fetchWaifu,
     fetchABD,
     fetchWaifuIm,
-    fetchSexcom
+    fetchSexcom,
+    fetchPorngifs
 };
