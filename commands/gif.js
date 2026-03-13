@@ -91,12 +91,9 @@ module.exports = {
 
         const replyPayload = {
             embeds: [embed],
-            components: [row]
+            components: [row],
+            files: attachment ? [attachment] : []
         };
-
-        if (attachment) {
-            replyPayload.files = [attachment];
-        }
 
         await interaction.editReply(replyPayload);
     },

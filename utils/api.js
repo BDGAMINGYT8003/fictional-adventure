@@ -1,6 +1,6 @@
 const axios = require('axios');
-const puppeteer = require('puppeteer');
-const { spawn } = require('child_process');
+const https = require('https');
+const dns = require('dns');
 const chalk = require('chalk');
 const { logError, logWarn, logInfo, logTimeout } = require('./logger');
 
@@ -227,32 +227,12 @@ async function fetchSexcom(niche) {
     }
 }
 
-// Universal FFmpeg Transcoder pipeline to ensure high-compatibility GIF conversion and size constraint (<8MB)
-function transcodeToGif(inputBuffer) {
+async function resolveIP(hostname) {
     return new Promise((resolve, reject) => {
-        const ffmpeg = spawn('ffmpeg', [
-            '-i', 'pipe:0',      // Read from stdin buffer
-            '-f', 'gif',         // Force output to gif container
-            '-vf', 'scale=480:-1', // Scale down slightly to ensure smaller file size while maintaining aspect ratio
-            '-fs', '7M',         // Hard limit file size to 7 Megabytes
-            '-y',                // Overwrite (though writing to pipe)
-            'pipe:1'             // Write to stdout buffer
-        ]);
-
-        const chunks = [];
-        ffmpeg.stdout.on('data', (chunk) => chunks.push(chunk));
-        ffmpeg.stderr.on('data', (data) => {}); // Silently consume stderr to prevent buffer block
-
-        ffmpeg.on('close', (code) => {
-            if (code === 0) resolve(Buffer.concat(chunks));
-            else reject(new Error(`FFmpeg exited with error code ${code}`));
+        dns.lookup(hostname, (err, address) => {
+            if (err) reject(err);
+            else resolve(address);
         });
-
-        ffmpeg.stdin.on('error', (e) => reject(e));
-
-        // Feed the intercepted binary data into FFmpeg
-        ffmpeg.stdin.write(inputBuffer);
-        ffmpeg.stdin.end();
     });
 }
 
@@ -261,58 +241,59 @@ async function fetchPorngifs() {
     let randomId = null;
     let targetUrl = null;
     let retries = 0;
-
-    // Launch pooled headless instance to mimic a real user session and bypass sophisticated hotlinking/Cloudflare protections
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+    let resolvedIP = null;
 
     try {
-        const page = await browser.newPage();
+        resolvedIP = await resolveIP('porngifs.com');
+    } catch (err) {
+        logError(`[DNS] Failed to resolve porngifs.com IP: ${err.message}`);
+        return null;
+    }
 
-        while (!finalBuffer && retries < 5) {
-            randomId = Math.floor(Math.random() * 39239) + 1;
-            targetUrl = `https://cdn.porngifs.com/img/${randomId}`;
+    const httpsAgent = new https.Agent({
+        servername: 'cdn.porngifs.com' // SNI bypass
+    });
 
-            try {
-                const response = await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 10000 });
+    while (!finalBuffer && retries < 15) {
+        randomId = Math.floor(Math.random() * 39239) + 1;
+        targetUrl = `https://cdn.porngifs.com/img/${randomId}`;
 
-                if (response && response.ok()) {
-                    const rawBuffer = await response.buffer();
+        // DNS Bypass: Connect directly to the IP but spoof the Host header
+        const bypassUrl = `https://${resolvedIP}/img/${randomId}`;
 
-                    try {
-                        const optimizedBuffer = await transcodeToGif(rawBuffer);
-                        const sizeMb = (optimizedBuffer.length / 1024 / 1024).toFixed(2);
+        try {
+            const response = await axios.get(bypassUrl, {
+                responseType: 'arraybuffer',
+                httpsAgent: httpsAgent,
+                headers: {
+                    'Host': 'cdn.porngifs.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                    'Referer': 'https://porngifs.com/',
+                    'Accept': 'image/*'
+                },
+                timeout: API_TIMEOUT
+            });
 
-                        if (optimizedBuffer.length <= 8 * 1024 * 1024 && optimizedBuffer.length > 1024) { // Valid non-empty output
-                            console.log(chalk.cyan(`[TRANSCODE] Successfully optimized Pin ID ${randomId} to ${sizeMb}MB`));
-                            finalBuffer = optimizedBuffer;
-                        } else {
-                            logWarn(`[Porngifs] Skipped file (ID: ${randomId}) due to FFmpeg size failure (${sizeMb}MB). Retrying...`);
-                            retries++;
-                        }
-                    } catch (transcodeErr) {
-                        logError(`[FFmpeg] Transcoding failed for ${randomId}: ${transcodeErr.message}`);
-                        retries++;
-                    }
+            if (response.status === 200 && response.data) {
+                const tempBuffer = Buffer.from(response.data, 'binary');
+                if (tempBuffer.length <= 8 * 1024 * 1024 && tempBuffer.length > 1024) {
+                    finalBuffer = tempBuffer;
+                    console.log(chalk.cyan(`[DNS BYPASS] Successfully fetched Pin ID ${randomId} from IP ${resolvedIP}`));
                 } else {
-                    retries++; // 404/403 gap handling
+                    logWarn(`[Porngifs] Skipped file (ID: ${randomId}) due to Discord 8MB size limit (${(tempBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+                    retries++;
                 }
-            } catch (navError) {
-                if (navError.message.includes('Timeout')) {
-                    logTimeout(`Browser navigation to porngifs.com exceeded 10 seconds.`);
-                }
-                retries++;
             }
+        } catch (error) {
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                logTimeout(`Request to porngifs.com exceeded 15 seconds during retry ${retries + 1}.`);
+            }
+            retries++;
         }
-    } finally {
-        // Critical: Ensure the headless browser instance is closed immediately to prevent memory leaks
-        await browser.close();
     }
 
     if (!finalBuffer) {
-        logError(`[Porngifs] Failed to fetch a valid, embed-safe image after retries.`);
+        logError(`[Porngifs] Failed to fetch a valid, embed-safe image after 15 retries.`);
         return null;
     }
 
