@@ -39,7 +39,7 @@ module.exports = {
             logInfo(`[/gif] Selected API Source: Porngifs.com`);
             imageData = await fetchPorngifs();
             if (imageData && imageData.id) {
-                watchUrl = `https://porngifs.com/gif/${imageData.id}`;
+                watchUrl = imageData.url; // Use direct CDN source instead of site redirect
                 logInfo(`[/gif] Fetched GIF - Src ID: ${imageData.id}`);
             }
         }
