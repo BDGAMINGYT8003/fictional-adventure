@@ -225,23 +225,58 @@ async function fetchSexcom(niche) {
 }
 
 async function fetchPorngifs() {
-    try {
-        // Bypass the AJAX endpoint and access the CDN inventory directly for full coverage (1 to 39239)
-        const randomId = Math.floor(Math.random() * 39239) + 1;
+    let buffer = null;
+    let randomId = null;
+    let targetUrl = null;
+    let retries = 0;
 
-        // Append a valid query parameter containing .gif to trick Discord's embed parser into rendering the animation natively.
-        // Hash fragments (#) kill the embed, and appending a strict file extension causes a 403 Forbidden on this specific CDN.
-        const targetUrl = `https://cdn.porngifs.com/img/${randomId}?format=.gif`;
+    // Retry mechanism to bypass "holes" (404/403 errors) and skip files over Discord's 8MB limit
+    while (!buffer && retries < 15) {
+        randomId = Math.floor(Math.random() * 39239) + 1;
+        targetUrl = `https://cdn.porngifs.com/img/${randomId}`;
 
-        return {
-            id: randomId.toString(),
-            url: targetUrl,
-            source: 'porngifs'
-        };
-    } catch (error) {
-        logError(`Failed to generate from porngifs CDN: ${error.message}`);
+        try {
+            const response = await axios.get(targetUrl, {
+                responseType: 'arraybuffer',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': 'https://porngifs.com/',
+                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+                },
+                timeout: API_TIMEOUT
+            });
+
+            if (response.status === 200 && response.data) {
+                const tempBuffer = Buffer.from(response.data, 'binary');
+                // Enforce Discord's strict 8MB limit for local file attachments
+                if (tempBuffer.length <= 8 * 1024 * 1024) {
+                    buffer = tempBuffer;
+                } else {
+                    logWarn(`[Porngifs] Skipped file (ID: ${randomId}) due to size limit (${(tempBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+                    retries++;
+                }
+            }
+        } catch (error) {
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                logTimeout(`Request to porngifs.com exceeded 15 seconds during retry ${retries + 1}.`);
+                return { error: 'TIMEOUT' };
+            }
+            // If it's a 403 or 404, we silently retry and increment the counter
+            retries++;
+        }
+    }
+
+    if (!buffer) {
+        logError(`[Porngifs] Failed to fetch a valid, embed-safe image after 15 retries.`);
         return null;
     }
+
+    return {
+        id: randomId.toString(),
+        url: targetUrl,
+        source: 'porngifs',
+        buffer: buffer
+    };
 }
 
 module.exports = {

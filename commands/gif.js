@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
 const { fetchSexcom, fetchPorngifs } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
@@ -59,14 +59,23 @@ module.exports = {
 
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
+        let attachment = null;
         const embed = new EmbedBuilder()
             .setTitle(`🔞 ▸ NSFW GIF`)
-            .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({
                 text: `${interaction.user.username} | Today at ${new Date().toLocaleTimeString()}`,
                 iconURL: interaction.user.displayAvatarURL()
             });
+
+        if (imageData.buffer) {
+            // Buffer supplied: build local attachment with explicit MIME masking
+            attachment = new AttachmentBuilder(imageData.buffer, { name: 'animation.gif' });
+            embed.setImage('attachment://animation.gif');
+        } else {
+            // URL supplied: standard remote image mapping
+            embed.setImage(imageData.url);
+        }
 
         const row = new ActionRowBuilder()
             .addComponents(
@@ -80,6 +89,15 @@ module.exports = {
                     .setStyle(ButtonStyle.Link)
             );
 
-        await interaction.editReply({ embeds: [embed], components: [row] });
+        const replyPayload = {
+            embeds: [embed],
+            components: [row]
+        };
+
+        if (attachment) {
+            replyPayload.files = [attachment];
+        }
+
+        await interaction.editReply(replyPayload);
     },
 };
