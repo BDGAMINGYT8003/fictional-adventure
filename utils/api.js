@@ -228,7 +228,10 @@ async function fetchPorngifs() {
     try {
         // Bypass the AJAX endpoint and access the CDN inventory directly for full coverage (1 to 39239)
         const randomId = Math.floor(Math.random() * 39239) + 1;
-        const targetUrl = `https://cdn.porngifs.com/img/${randomId}`;
+
+        // Append an empty hash query with .gif to trick Discord's embed parser into rendering the raw image/gif natively,
+        // as appending a strict file extension causes a 403 Forbidden on this specific CDN.
+        const targetUrl = `https://cdn.porngifs.com/img/${randomId}#.gif`;
 
         return {
             id: randomId.toString(),
