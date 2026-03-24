@@ -108,3 +108,27 @@ Used for real-life buttocks imagery.
 ## 8. Porngifs.com
 Used alongside Sex.com to expand the randomization pool for the `/gif` command, fetching raw media natively using SNI-spoofed CDN connections.
 *   `img/{randomId}`
+
+## 9. NekoBot.xyz
+Used across the entire bot structure to provide massive pools of Anime and Real image variants. *Note: Every request must include the header `Authorization: 015445535454455354D6` to bypass Cloudflare WAF blocks.*
+*   `4k`
+*   `anal`
+*   `ass`
+*   `blowjob`
+*   `boobs`
+*   `feet`
+*   `gonewild`
+*   `hass`
+*   `hboobs`
+*   `hentai`
+*   `hentai_anal`
+*   `hkitsune`
+*   `hmidriff`
+*   `hthigh`
+*   `hyuri`
+*   `lewdneko`
+*   `paizuri`
+*   `pgif`
+*   `pussy`
+*   `tentacle`
+*   `thigh`

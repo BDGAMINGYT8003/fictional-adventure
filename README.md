@@ -2,7 +2,7 @@
 
 This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
 
-Instead of relying on a single slow database, this bot aggressively pulls media from several different adult APIs and CDNs (including Sex.com, Porngifs.com, Waifu.im, N-SFW.com, Purrbot, Oboobs, and Obutts) to ensure a massive, constantly refreshing variety of lewd content.
+Instead of relying on a single slow database, this bot aggressively pulls media from several different adult APIs and CDNs (including NekoBot, Sex.com, Porngifs.com, Waifu.im, N-SFW.com, Purrbot, Oboobs, and Obutts) to ensure a massive, constantly refreshing variety of lewd content.
 
 If Discord tries to block or fail an image preview, the bot downloads the raw file directly and uploads it as an attachment to guarantee you see the animation.
 
@@ -12,34 +12,41 @@ If Discord tries to block or fail an image preview, the bot downloads the raw fi
 
 The bot comes pre-loaded with a massive directory of specific fetishes, categories, and utility commands:
 
-*   `/anal`
-*   `/ass`
-*   `/blowjob`
-*   `/boobs`
+*   `/4k`
+*   `/anal` *(Includes optional Real/Anime style filter)*
+*   `/ass` *(Includes optional Real/Anime style filter)*
+*   `/blowjob` *(Includes optional Real/Anime style filter)*
+*   `/boobs` *(Includes optional Real/Anime style filter)*
 *   `/breeding`
 *   `/buttplug`
 *   `/cages`
 *   `/cum`
 *   `/ecchi`
 *   `/ero`
-*   `/feet`
+*   `/feet` *(Includes optional Real/Anime style filter)*
 *   `/fuck`
 *   `/gif` *(Randomized hardcore GIFs from massive CDN pools)*
+*   `/gonewild`
 *   `/help` *(Dynamic, searchable directory of all commands)*
 *   `/hentai`
 *   `/invite` *(Generates an OAuth2 link to add the bot)*
+*   `/kitsune`
 *   `/legs`
 *   `/maid`
+*   `/midriff`
 *   `/milf`
 *   `/neko`
 *   `/paizuri`
 *   `/petgirls`
 *   `/ping` *(System diagnostics and latency metrics)*
+*   `/pussy`
 *   `/pussylick`
 *   `/selfie`
 *   `/smothering`
 *   `/socks`
 *   `/solo`
+*   `/tentacle`
+*   `/thigh` *(Includes optional Real/Anime style filter)*
 *   `/threesome`
 *   `/uniform`
 *   `/waifu`
