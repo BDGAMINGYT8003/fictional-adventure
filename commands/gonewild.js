@@ -8,36 +8,19 @@ module.exports = {
         .setDescription('Delivers a random NSFW gonewild Image/GIF')
         .setIntegrationTypes(0, 1)
         .setContexts(0, 1, 2)
-        .setNSFW(true)
-        .addStringOption(option =>
-            option.setName('style')
-                .setDescription('Select the style (Anime or Real)')
-                .setRequired(false)
-                .addChoices(
-                    { name: 'Real', value: 'Real' }
-                )
-        ),
-    async execute(interaction, isButton = false, savedStyle = null) {
+        .setNSFW(true),
+    async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
 
-        const style = savedStyle || (interaction.options ? interaction.options.getString('style') : null);
+
         const animeSources = [];
         const realSources = [ { id: 'nekobot', type: 'gonewild' } ];
 
-        let pool = [];
-        if (style === 'Anime') {
-            pool = animeSources;
-        } else if (style === 'Real') {
-            pool = realSources;
-        } else {
-            pool = [...animeSources, ...realSources];
-        }
-
-        if (pool.length === 0) pool = [...animeSources, ...realSources];
+        const pool = [...animeSources, ...realSources];
 
         const sourceObj = pool[Math.floor(Math.random() * pool.length)];
 
@@ -90,7 +73,7 @@ module.exports = {
                 iconURL: interaction.user.displayAvatarURL()
             });
 
-        const customIdBase = style ? `refresh_gonewild_${style}` : `refresh_gonewild`;
+        const customIdBase = `refresh_gonewild`;
 
         const row = new ActionRowBuilder()
             .addComponents(

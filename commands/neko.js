@@ -8,37 +8,19 @@ module.exports = {
         .setDescription('Delivers a random NSFW neko Image/GIF')
         .setIntegrationTypes(0, 1)
         .setContexts(0, 1, 2)
-        .setNSFW(true)
-        .addStringOption(option =>
-            option.setName('style')
-                .setDescription('Select the style (Anime or Real)')
-                .setRequired(false)
-                .addChoices(
-                    { name: 'Anime', value: 'Anime' },
-                    { name: 'Real', value: 'Real' }
-                )
-        ),
-    async execute(interaction, isButton = false, savedStyle = null) {
+        .setNSFW(true),
+    async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
 
-        const style = savedStyle || (interaction.options ? interaction.options.getString('style') : null);
+
         const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/gif' }, { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/img' }, { id: 'waifupics', endpoint: 'https://api.waifu.pics/nsfw/neko' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/neko' } ];
         const realSources = [ { id: 'nekobot', type: 'lewdneko' } ];
 
-        let pool = [];
-        if (style === 'Anime') {
-            pool = animeSources;
-        } else if (style === 'Real') {
-            pool = realSources;
-        } else {
-            pool = [...animeSources, ...realSources];
-        }
-
-        if (pool.length === 0) pool = [...animeSources, ...realSources];
+        const pool = [...animeSources, ...realSources];
 
         const sourceObj = pool[Math.floor(Math.random() * pool.length)];
 
@@ -91,7 +73,7 @@ module.exports = {
                 iconURL: interaction.user.displayAvatarURL()
             });
 
-        const customIdBase = style ? `refresh_neko_${style}` : `refresh_neko`;
+        const customIdBase = `refresh_neko`;
 
         const row = new ActionRowBuilder()
             .addComponents(

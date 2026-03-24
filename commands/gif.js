@@ -13,21 +13,13 @@ module.exports = {
         .setDescription('Delivers a random NSFW GIF')
         .setIntegrationTypes(0, 1)
         .setContexts(0, 1, 2)
-        .setNSFW(true)
-        .addStringOption(option =>
-            option.setName('style')
-                .setDescription('Select the style (Real only for GIFs)')
-                .setRequired(false)
-                .addChoices({ name: 'Real', value: 'Real' })
-        ),
-    async execute(interaction, isButton = false, savedStyle = null) {
+        .setNSFW(true),
+    async execute(interaction, isButton = false) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
-
-        const style = savedStyle || (interaction.options ? interaction.options.getString('style') : null);
 
         let imageData = null;
         let watchUrl = null;
@@ -91,7 +83,7 @@ module.exports = {
             embed.setImage(imageData.url);
         }
 
-        const customIdBase = style ? `refresh_gif_${style}` : `refresh_gif`;
+        const customIdBase = 'refresh_gif';
 
         const row = new ActionRowBuilder()
             .addComponents(
