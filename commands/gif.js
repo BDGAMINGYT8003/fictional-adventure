@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchSexcom, fetchPorngifs } = require('../utils/api');
+const { fetchSexcom, fetchPorngifs, fetchNekoBot } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 const NICHES = [
@@ -13,19 +13,27 @@ module.exports = {
         .setDescription('Delivers a random NSFW GIF')
         .setIntegrationTypes(0, 1)
         .setContexts(0, 1, 2)
-        .setNSFW(true),
-    async execute(interaction, isButton = false) {
+        .setNSFW(true)
+        .addStringOption(option =>
+            option.setName('style')
+                .setDescription('Select the style (Real only for GIFs)')
+                .setRequired(false)
+                .addChoices({ name: 'Real', value: 'Real' })
+        ),
+    async execute(interaction, isButton = false, savedStyle = null) {
         if (!isButton) {
             await interaction.deferReply();
         } else {
             await interaction.deferUpdate();
         }
 
+        const style = savedStyle || (interaction.options ? interaction.options.getString('style') : null);
+
         let imageData = null;
         let watchUrl = null;
 
-        // Randomly pick a source: 0 = Sex.com, 1 = Porngifs.com
-        const sourcePick = Math.floor(Math.random() * 2);
+        // Randomly pick a source: 0 = Sex.com, 1 = Porngifs.com, 2 = NekoBot (pgif)
+        const sourcePick = Math.floor(Math.random() * 3);
 
         if (sourcePick === 0) {
             const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
@@ -35,12 +43,18 @@ module.exports = {
                 watchUrl = `https://www.sex.com/pin/${imageData.id}/`;
                 logInfo(`[/gif] Fetched GIF - Pin ID: ${imageData.id}`);
             }
-        } else {
+        } else if (sourcePick === 1) {
             logInfo(`[/gif] Selected API Source: Porngifs.com`);
             imageData = await fetchPorngifs();
             if (imageData && imageData.id) {
-                watchUrl = imageData.url; // Use direct CDN source instead of site redirect
+                watchUrl = imageData.url;
                 logInfo(`[/gif] Fetched GIF - Src ID: ${imageData.id}`);
+            }
+        } else {
+            logInfo(`[/gif] Selected API Source: NekoBot (type: pgif)`);
+            imageData = await fetchNekoBot('pgif');
+            if (imageData && imageData.url) {
+                watchUrl = imageData.url;
             }
         }
 
@@ -77,10 +91,12 @@ module.exports = {
             embed.setImage(imageData.url);
         }
 
+        const customIdBase = style ? `refresh_gif_${style}` : `refresh_gif`;
+
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`refresh_gif`)
+                    .setCustomId(customIdBase)
                     .setLabel('🔄 ▸ Refresh')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()

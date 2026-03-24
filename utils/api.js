@@ -236,6 +236,33 @@ async function resolveIP(hostname) {
     });
 }
 
+async function fetchNekoBot(type) {
+    try {
+        const response = await axios.get(`https://nekobot.xyz/api/image?type=${type}`, {
+            headers: {
+                'Authorization': '015445535454455354D6'
+            },
+            timeout: API_TIMEOUT
+        });
+
+        if (!response.data || !response.data.success || !response.data.message) {
+            return null;
+        }
+
+        return {
+            url: response.data.message,
+            source: 'nekobot'
+        };
+    } catch (error) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            logTimeout(`Request to nekobot.xyz exceeded 15 seconds.`);
+            return { error: 'TIMEOUT' };
+        }
+        logError(`Failed to fetch from nekobot.xyz: ${error.message}`);
+        return null;
+    }
+}
+
 async function fetchPorngifs() {
     let finalBuffer = null;
     let randomId = null;
@@ -313,5 +340,6 @@ module.exports = {
     fetchABD,
     fetchWaifuIm,
     fetchSexcom,
-    fetchPorngifs
+    fetchPorngifs,
+    fetchNekoBot
 };
