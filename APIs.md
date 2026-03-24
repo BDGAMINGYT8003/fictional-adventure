@@ -104,3 +104,7 @@ Used for real-life breast imagery.
 Used for real-life buttocks imagery.
 *   `random`
 *   `get/{id}`
+
+## 8. Porngifs.com
+Used alongside Sex.com to expand the randomization pool for the `/gif` command, fetching raw media natively using SNI-spoofed CDN connections.
+*   `img/{randomId}`
