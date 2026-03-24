@@ -9,7 +9,7 @@ module.exports = async (client) => {
 
     const globalCommands = [];
     const guildCommands = [];
-    const TESTING_GUILD_ID = '1301072065880915991';
+    const TESTING_GUILD_ID = process.env.TESTING_GUILD_ID || null;
 
     for (const file of commandFiles) {
         try {
@@ -47,12 +47,14 @@ module.exports = async (client) => {
         logSuccess(`Successfully reloaded ${globalCommands.length} global application (/) commands.`);
 
         // Register Guild Commands
-        if (TESTING_GUILD_ID) {
+        if (TESTING_GUILD_ID && guildCommands.length > 0) {
             await rest.put(
                 Routes.applicationGuildCommands(process.env.CLIENT_ID, TESTING_GUILD_ID),
                 { body: guildCommands },
             );
             logSuccess(`Successfully reloaded ${guildCommands.length} guild-specific application (/) commands.`);
+        } else if (!TESTING_GUILD_ID && guildCommands.length > 0) {
+            logWarn(`Found ${guildCommands.length} guild-specific (testOnly) commands, but no TESTING_GUILD_ID environment variable is set. Skipping guild registration.`);
         }
 
     } catch (error) {
