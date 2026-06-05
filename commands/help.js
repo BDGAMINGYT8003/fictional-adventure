@@ -140,10 +140,10 @@ module.exports = {
             let paramsText = '';
             if (command.data.options && command.data.options.length > 0) {
                 for (const option of command.data.options) {
-                    paramsText += `• **\`${option.name}\`** ${option.required ? '(Required)' : '(Optional)'}\n  *${option.description}*\n`;
+                    paramsText += `• **\`${option.name}\`** ${option.required ? '(Required)' : '(Optional)'}\n-# ${option.description}\n`;
                 }
             } else {
-                paramsText = '*No parameters available for this command.*';
+                paramsText = '-# No parameters available for this command.';
             }
 
             embed.addFields({ name: 'Parameters', value: paramsText });
@@ -186,7 +186,7 @@ module.exports = {
 
         let description = 'Here is a list of all available commands:\n\n';
         for (const cmd of currentCommands) {
-            description += `**\`/${cmd.data.name}\`**\n*${cmd.data.description}*\n\n`;
+            description += `**\`/${cmd.data.name}\`**\n-# ${cmd.data.description}\n\n`;
         }
         embed.setDescription(description);
 
