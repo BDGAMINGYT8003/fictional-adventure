@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
 const { fetchAss, fetchABD, fetchWaifuIm, fetchNekoBot } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
@@ -108,6 +108,8 @@ module.exports = {
                     .setStyle(ButtonStyle.Link)
             );
 
-        await interaction.editReply({ embeds: [embed], components: [row] });
+        const attachment = imageData.buffer ? new AttachmentBuilder(imageData.buffer, { name: 'nsfw.gif' }) : null;
+        if (attachment) embed.setImage('attachment://nsfw.gif');
+        await interaction.editReply({ embeds: [embed], components: [row], files: attachment ? [attachment] : [] });
     },
 };

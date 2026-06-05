@@ -134,9 +134,25 @@ async function fetchABD(endpoint) {
 
         logInfo(`[fetchABD] Successfully extracted image using field: ${fieldUsed}`);
 
-        return {
-            url: targetUrl
-        };
+        // The N-SFW S3 CDN (n-sfw.ap-osaka-1.s3.ink) has an expired TLS certificate.
+        // Discord's media proxy enforces valid certs and will refuse to embed the URL.
+        // Fix: download the image directly here with cert validation disabled, then
+        // return the raw buffer so commands can upload it as a file attachment instead,
+        // bypassing Discord's proxy entirely.
+        const insecureAgent = new https.Agent({ rejectUnauthorized: false });
+        try {
+            const imgResponse = await axios.get(targetUrl, {
+                responseType: 'arraybuffer',
+                httpsAgent: insecureAgent,
+                timeout: API_TIMEOUT
+            });
+            const buffer = Buffer.from(imgResponse.data);
+            logInfo(`[fetchABD] Buffered image (${(buffer.length / 1024).toFixed(1)} KB) to bypass expired CDN cert`);
+            return { url: targetUrl, buffer };
+        } catch (imgError) {
+            logWarn(`[fetchABD] Failed to buffer image, falling back to URL only: ${imgError.message}`);
+            return { url: targetUrl };
+        }
     } catch (error) {
         if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
             logTimeout(`Request to n-sfw.com (ABD) exceeded 15 seconds.`);

@@ -27,3 +27,8 @@ args = "node index.js"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[userenv]
+
+[userenv.shared]
+WAIFU_PICS = "false"
