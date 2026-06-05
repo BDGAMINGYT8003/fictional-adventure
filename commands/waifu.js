@@ -14,14 +14,17 @@ module.exports = {
         }
 
         const sources = ['waifupics', 'waifuim'];
-        const source = sources[Math.floor(Math.random() * sources.length)];
+        const activeSources = process.env.WAIFU_PICS === 'false' ? sources.filter(s => s !== 'waifupics') : sources;
+        const source = activeSources.length > 0 ? activeSources[Math.floor(Math.random() * activeSources.length)] : sources[0];
 
         let imageData = null;
 
         if (source === 'waifupics') {
-            const endpoint = 'https://api.waifu.pics/nsfw/waifu';
-            logInfo(`[/waifu] Selected API Source: Waifu.pics (${endpoint})`);
-            imageData = await fetchWaifu(endpoint);
+            if (process.env.WAIFU_PICS !== 'false') {
+                const endpoint = 'https://api.waifu.pics/nsfw/waifu';
+                logInfo(`[/waifu] Selected API Source: Waifu.pics (${endpoint})`);
+                imageData = await fetchWaifu(endpoint);
+            }
         } else if (source === 'waifuim') {
             logInfo(`[/waifu] Selected API Source: Waifu.im (tag: waifu)`);
             imageData = await fetchWaifuIm('waifu', true);

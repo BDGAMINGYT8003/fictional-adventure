@@ -88,6 +88,9 @@ async function fetchPurrbot(endpoint) {
 }
 
 async function fetchWaifu(endpoint) {
+    if (process.env.WAIFU_PICS === 'false') {
+        return null;
+    }
     try {
         const response = await axios.get(endpoint, { timeout: API_TIMEOUT });
 

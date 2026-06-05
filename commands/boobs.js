@@ -40,7 +40,8 @@ module.exports = {
 
         if (pool.length === 0) pool = [...animeSources, ...realSources];
 
-        const sourceObj = pool[Math.floor(Math.random() * pool.length)];
+        const activePool = process.env.WAIFU_PICS === 'false' ? pool.filter(src => src.id !== 'waifupics') : pool;
+        const sourceObj = activePool.length > 0 ? activePool[Math.floor(Math.random() * activePool.length)] : pool[0];
 
         let imageData = null;
 
@@ -51,8 +52,10 @@ module.exports = {
             logInfo(`[/boobs] Selected API Source: ABD (${sourceObj.endpoint})`);
             imageData = await fetchABD(sourceObj.endpoint);
         } else if (sourceObj.id === 'waifupics') {
-            logInfo(`[/boobs] Selected API Source: Waifu.pics (${sourceObj.endpoint})`);
-            imageData = await fetchWaifu(sourceObj.endpoint);
+            if (process.env.WAIFU_PICS !== 'false') {
+                logInfo(`[/boobs] Selected API Source: Waifu.pics (${sourceObj.endpoint})`);
+                imageData = await fetchWaifu(sourceObj.endpoint);
+            }
         } else if (sourceObj.id === 'waifuim') {
             logInfo(`[/boobs] Selected API Source: Waifu.im (tag: ${sourceObj.tag})`);
             imageData = await fetchWaifuIm(sourceObj.tag, true);
