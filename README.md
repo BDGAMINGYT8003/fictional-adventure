@@ -1,14 +1,10 @@
 # Discord NSFW Media Bot
 
+This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
+
 ## What's New in v1.1
 *   **Disabled Waifu.pics:** The `waifu.pics` domain has expired. Instead of removing the API code, we implemented a global feature flag using the `WAIFU_PICS` environment variable. Setting this to `false` dynamically filters `waifupics` out of the active randomized source pools across all commands, cleanly bypassing the dead API until the domain is renewed.
 *   **Fixed N-SFW.com API (ABD):** The S3 CDN hosting images for `n-sfw.com` has an expired TLS certificate, which causes Discord's proxy to refuse embedding (throwing `net::ERR_CERT_DATE_INVALID`). We bypassed this by using an insecure HTTPS agent (`rejectUnauthorized: false`) in Axios to download the image as an `arraybuffer` locally, and then uploading it directly as an attachment to bypass Discord's strict media proxy entirely.
-
-This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
-
-Instead of relying on a single slow database, this bot aggressively pulls media from several different adult APIs and CDNs (including NekoBot, Sex.com, Porngifs.com, Waifu.im, N-SFW.com, Purrbot, Oboobs, and Obutts) to ensure a massive, constantly refreshing variety of lewd content.
-
-If Discord tries to block or fail an image preview, the bot downloads the raw file directly and uploads it as an attachment to guarantee you see the animation.
 
 ---
 
