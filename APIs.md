@@ -142,3 +142,7 @@ Used for fetching a massive variety of explicit and suggestive anime artwork via
 *   `pussy`
 *   `threesome`
 *   `yuri`
+
+## 11. Porngifs.tv
+Used specifically for the `/gif` command, scraping directly from the backend to bypass UI and natively embed high-quality animated WebP and GIF files.
+*   `?action=ajax&mode=async&function=get_block&from={randomPage}`
