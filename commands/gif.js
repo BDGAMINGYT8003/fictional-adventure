@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchSexcom, fetchPorngifs, fetchNekoBot } = require('../utils/api');
+const { fetchSexcom, fetchPorngifs, fetchNekoBot, fetchPorngifsTv } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 const NICHES = [
@@ -24,8 +24,8 @@ module.exports = {
         let imageData = null;
         let watchUrl = null;
 
-        // Randomly pick a source: 0 = Sex.com, 1 = Porngifs.com, 2 = NekoBot (pgif)
-        const sourcePick = Math.floor(Math.random() * 3);
+        // Randomly pick a source: 0 = Sex.com, 1 = Porngifs.com, 2 = NekoBot (pgif), 3 = Porngifs.tv
+        const sourcePick = Math.floor(Math.random() * 4);
 
         if (sourcePick === 0) {
             const niche = NICHES[Math.floor(Math.random() * NICHES.length)];
@@ -42,9 +42,15 @@ module.exports = {
                 watchUrl = imageData.url;
                 logInfo(`[/gif] Fetched GIF - Src ID: ${imageData.id}`);
             }
-        } else {
+        } else if (sourcePick === 2) {
             logInfo(`[/gif] Selected API Source: NekoBot (type: pgif)`);
             imageData = await fetchNekoBot('pgif');
+            if (imageData && imageData.url) {
+                watchUrl = imageData.url;
+            }
+        } else {
+            logInfo(`[/gif] Selected API Source: Porngifs.tv`);
+            imageData = await fetchPorngifsTv();
             if (imageData && imageData.url) {
                 watchUrl = imageData.url;
             }

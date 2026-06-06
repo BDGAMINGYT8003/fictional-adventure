@@ -373,6 +373,71 @@ async function fetchPorngifs() {
     };
 }
 
+async function fetchPorngifsTv() {
+    let finalBuffer = null;
+    let targetUrl = null;
+    let randomPage = null;
+    let retries = 0;
+
+    while (!finalBuffer && retries < 15) {
+        randomPage = Math.floor(Math.random() * 2603) + 1;
+        const endpoint = `https://porngifs.tv/?action=ajax&mode=async&function=get_block&block_id=list_videos_most_recent_videos&sort_by=post_date&from=${randomPage}`;
+
+        try {
+            const response = await axios.get(endpoint, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                },
+                timeout: API_TIMEOUT
+            });
+
+            if (response.data) {
+                // Extract only .webp or .gif URLs, completely bypassing .webm dependencies
+                const matches = [...response.data.matchAll(/data-webp=\"([^"]+\.(?:webp|gif))\"/g)];
+                if (matches.length > 0) {
+                    targetUrl = matches[Math.floor(Math.random() * matches.length)][1];
+
+                    const imgResponse = await axios.get(targetUrl, {
+                        responseType: 'arraybuffer',
+                        timeout: API_TIMEOUT
+                    });
+
+                    const tempBuffer = Buffer.from(imgResponse.data, 'binary');
+                    if (tempBuffer.length <= 8 * 1024 * 1024 && tempBuffer.length > 1024) {
+                        finalBuffer = tempBuffer;
+                        logInfo(`[Porngifs.tv] Successfully fetched media from page ${randomPage}`);
+                    } else {
+                        logWarn(`[Porngifs.tv] Skipped file due to Discord 8MB size limit (${(tempBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+                        retries++;
+                    }
+                } else {
+                    retries++;
+                }
+            } else {
+                retries++;
+            }
+        } catch (error) {
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                logTimeout(`Request to porngifs.tv exceeded 15 seconds during retry ${retries + 1}.`);
+            }
+            retries++;
+        }
+    }
+
+    if (!finalBuffer) {
+        logError(`[Porngifs.tv] Failed to fetch a valid, embed-safe image after 15 retries.`);
+        return null;
+    }
+
+    return {
+        id: randomPage.toString(),
+        url: targetUrl,
+        source: 'porngifstv',
+        buffer: finalBuffer
+    };
+}
+
 module.exports = {
     fetchBoobs,
     fetchAss,
@@ -383,5 +448,6 @@ module.exports = {
     fetchSexcom,
     fetchPorngifs,
     fetchNekoBot,
-    fetchNekosV4
+    fetchNekosV4,
+    fetchPorngifsTv
 };

@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/BDGAMINGYT8003/fictional-adventure#readme",
   "dependencies": {
-    "axios": "^1.13.6",
+    "axios": "^1.17.0",
     "chalk": "^4.1.2",
     "discord.js": "^14.25.1"
   }
