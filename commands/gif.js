@@ -81,9 +81,14 @@ module.exports = {
             });
 
         if (imageData.buffer) {
-            // Buffer supplied: build local attachment with explicit MIME masking
-            attachment = new AttachmentBuilder(imageData.buffer, { name: 'animation.gif' });
-            embed.setImage('attachment://animation.gif');
+            // Determine file extension to preserve native animation support (e.g. .webp, .gif)
+            const extMatch = imageData.url.match(/\.([a-z0-9]+)(?:[\?#]|$)/i);
+            const ext = extMatch ? extMatch[1].toLowerCase() : 'gif';
+
+            // Buffer supplied: build local attachment with accurate MIME masking
+            const fileName = `animation.${ext}`;
+            attachment = new AttachmentBuilder(imageData.buffer, { name: fileName });
+            embed.setImage(`attachment://${fileName}`);
         } else {
             // URL supplied: standard remote image mapping
             embed.setImage(imageData.url);
