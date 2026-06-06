@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchPurrbot, fetchABD } = require('../utils/api');
+const { fetchPurrbot, fetchABD, fetchNekosV4 } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -36,7 +36,8 @@ module.exports = {
 
         let fetchGender = originalGenderChoice;
         if (!fetchGender) {
-            fetchGender = Math.random() < 0.5 ? 'female' : 'male';
+            const choices = ['female', 'male', 'nekosv4'];
+            fetchGender = choices[Math.floor(Math.random() * choices.length)];
         }
 
         let imageData = null;
@@ -54,11 +55,15 @@ module.exports = {
                 logInfo(`[/solo] Selected API Source: ABD Masturbation (${endpoint})`);
                 imageData = await fetchABD(endpoint);
             }
-        } else {
+        } else if (fetchGender === 'male') {
             // Male only uses Purrbot
             const endpoint = 'https://purrbot.site/api/img/nsfw/solo_male/gif';
             logInfo(`[/solo] Selected API Source: Purrbot Male (${endpoint})`);
             imageData = await fetchPurrbot(endpoint);
+        } else if (fetchGender === 'nekosv4') {
+            const endpoint = 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=masturbating';
+            logInfo(`[/solo] Selected API Source: NekosV4 (${endpoint})`);
+            imageData = await fetchNekosV4(endpoint);
         }
 
         if (!imageData || imageData.error) {
@@ -76,7 +81,12 @@ module.exports = {
 
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
-        const embedTitleGender = fetchGender === 'female' ? 'Female' : 'Male';
+        let embedTitleGender = 'Female';
+        if (fetchGender === 'male') {
+            embedTitleGender = 'Male';
+        } else if (fetchGender === 'nekosv4') {
+            embedTitleGender = 'Random';
+        }
         const embed = new EmbedBuilder()
             .setTitle(`🔞 ▸ NSFW ${embedTitleGender} Solo Image`)
             .setImage(imageData.url)

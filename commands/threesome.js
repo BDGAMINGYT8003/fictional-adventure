@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchPurrbot } = require('../utils/api');
+const { fetchPurrbot, fetchNekosV4 } = require('../utils/api');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -36,13 +36,19 @@ module.exports = {
 
         let fetchType = originalTypeChoice;
         if (!fetchType) {
-            const types = ['fff', 'ffm', 'mmf'];
+            const types = ['fff', 'ffm', 'mmf', 'nekosv4'];
             fetchType = types[Math.floor(Math.random() * types.length)];
         }
 
-        const endpoint = `https://purrbot.site/api/img/nsfw/threesome_${fetchType}/gif`;
+        let imageData = null;
 
-        const imageData = await fetchPurrbot(endpoint);
+        if (fetchType === 'nekosv4') {
+            const endpoint = 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=threesome';
+            imageData = await fetchNekosV4(endpoint);
+        } else {
+            const endpoint = `https://purrbot.site/api/img/nsfw/threesome_${fetchType}/gif`;
+            imageData = await fetchPurrbot(endpoint);
+        }
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image or no image found with that ID.';
@@ -60,12 +66,12 @@ module.exports = {
         const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 
         let displayType = '';
-        if (fetchType === 'fff') displayType = '3 Females';
-        if (fetchType === 'ffm') displayType = '2 Females 1 Male';
-        if (fetchType === 'mmf') displayType = '2 Males 1 Female';
+        if (fetchType === 'fff') displayType = ' (3 Females)';
+        if (fetchType === 'ffm') displayType = ' (2 Females 1 Male)';
+        if (fetchType === 'mmf') displayType = ' (2 Males 1 Female)';
 
         const embed = new EmbedBuilder()
-            .setTitle(`🔞 ▸ NSFW Threesome Image (${displayType})`)
+            .setTitle(`🔞 ▸ NSFW Threesome Image${displayType}`)
             .setImage(imageData.url)
             .setColor(`#${randomColor}`)
             .setFooter({

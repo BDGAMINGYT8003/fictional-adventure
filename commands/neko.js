@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchPurrbot, fetchWaifu, fetchABD, fetchNekoBot } = require('../utils/api');
+const { fetchPurrbot, fetchWaifu, fetchABD, fetchNekoBot, fetchNekosV4 } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
         }
 
 
-        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/gif' }, { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/img' }, { id: 'waifupics', endpoint: 'https://api.waifu.pics/nsfw/neko' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/neko' } ];
+        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/gif' }, { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/img' }, { id: 'waifupics', endpoint: 'https://api.waifu.pics/nsfw/neko' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/neko' }, { id: 'nekosv4', endpoint: 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=catgirl' } ];
         const realSources = [ { id: 'nekobot', type: 'lewdneko' } ];
 
         const pool = [...animeSources, ...realSources];
@@ -50,6 +50,9 @@ module.exports = {
         } else if (sourceObj.id === 'nekobot') {
             logInfo(`[/neko] Selected API Source: NekoBot (type: ${sourceObj.type})`);
             imageData = await fetchNekoBot(sourceObj.type);
+        } else if (sourceObj.id === 'nekosv4') {
+            logInfo(`[/neko] Selected API Source: NekosV4 (${sourceObj.endpoint})`);
+            imageData = await fetchNekosV4(sourceObj.endpoint);
         }
 
         if (!imageData || imageData.error) {

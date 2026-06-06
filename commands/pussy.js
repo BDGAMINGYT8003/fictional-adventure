@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchNekoBot } = require('../utils/api');
+const { fetchNekoBot, fetchNekosV4, fetchPurrbot, fetchWaifu, fetchABD, fetchWaifuIm } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
         }
 
 
-        const animeSources = [];
+        const animeSources = [ { id: 'nekosv4', endpoint: 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=pussy' } ];
         const realSources = [ { id: 'nekobot', type: 'pussy' } ];
 
         const pool = [...animeSources, ...realSources];
@@ -50,6 +50,9 @@ module.exports = {
         } else if (sourceObj.id === 'nekobot') {
             logInfo(`[/pussy] Selected API Source: NekoBot (type: ${sourceObj.type})`);
             imageData = await fetchNekoBot(sourceObj.type);
+        } else if (sourceObj.id === 'nekosv4') {
+            logInfo(`[/pussy] Selected API Source: NekosV4 (${sourceObj.endpoint})`);
+            imageData = await fetchNekosV4(sourceObj.endpoint);
         }
 
         if (!imageData || imageData.error) {

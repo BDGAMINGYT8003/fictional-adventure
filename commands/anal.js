@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchPurrbot, fetchABD, fetchNekoBot } = require('../utils/api');
+const { fetchPurrbot, fetchABD, fetchNekoBot, fetchNekosV4 } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -26,7 +26,7 @@ module.exports = {
         }
 
         const style = savedStyle || (interaction.options ? interaction.options.getString('style') : null);
-        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/anal/gif' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/anal' }, { id: 'nekobot', type: 'hentai_anal' } ];
+        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/anal/gif' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/anal' }, { id: 'nekobot', type: 'hentai_anal' }, { id: 'nekosv4', endpoint: 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=anal' } ];
         const realSources = [ { id: 'nekobot', type: 'anal' } ];
 
         let pool = [];
@@ -68,6 +68,9 @@ module.exports = {
         } else if (sourceObj.id === 'nekobot') {
             logInfo(`[/anal] Selected API Source: NekoBot (type: ${sourceObj.type})`);
             imageData = await fetchNekoBot(sourceObj.type);
+        } else if (sourceObj.id === 'nekosv4') {
+            logInfo(`[/anal] Selected API Source: NekosV4 (${sourceObj.endpoint})`);
+            imageData = await fetchNekosV4(sourceObj.endpoint);
         }
 
         if (!imageData || imageData.error) {

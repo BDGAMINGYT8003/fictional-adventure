@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { fetchWaifuIm } = require('../utils/api');
+const { fetchWaifuIm, fetchNekosV4 } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -13,8 +13,21 @@ module.exports = {
             await interaction.deferUpdate();
         }
 
-        logInfo(`[/maid] Selected API Source: Waifu.im (tag: maid)`);
-        const imageData = await fetchWaifuIm('maid', true);
+        const sources = [
+            { id: 'waifuim', tag: 'maid' },
+            { id: 'nekosv4', endpoint: 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=maid' }
+        ];
+
+        const sourceObj = sources[Math.floor(Math.random() * sources.length)];
+        let imageData = null;
+
+        if (sourceObj.id === 'waifuim') {
+            logInfo(`[/maid] Selected API Source: Waifu.im (tag: ${sourceObj.tag})`);
+            imageData = await fetchWaifuIm(sourceObj.tag, true);
+        } else if (sourceObj.id === 'nekosv4') {
+            logInfo(`[/maid] Selected API Source: NekosV4 (${sourceObj.endpoint})`);
+            imageData = await fetchNekosV4(sourceObj.endpoint);
+        }
 
         if (!imageData || imageData.error) {
             let errorMsg = 'Failed to fetch image or no image found with that ID.';

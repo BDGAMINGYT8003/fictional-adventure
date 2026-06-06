@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
-const { fetchPurrbot, fetchABD, fetchNekoBot } = require('../utils/api');
+const { fetchPurrbot, fetchABD, fetchNekoBot, fetchWaifu, fetchWaifuIm, fetchNekosV4 } = require('../utils/api');
 const { logInfo } = require('../utils/logger');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
         }
 
 
-        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/yuri/gif' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/yuri' }, { id: 'nekobot', type: 'hyuri' } ];
+        const animeSources = [ { id: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/yuri/gif' }, { id: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/yuri' }, { id: 'nekobot', type: 'hyuri' }, { id: 'nekosv4', endpoint: 'https://api.nekosapi.com/v4/images/random?limit=1&rating=explicit,suggestive&tags=yuri' } ];
         const realSources = [];
 
         const pool = [...animeSources, ...realSources];
@@ -50,6 +50,9 @@ module.exports = {
         } else if (sourceObj.id === 'nekobot') {
             logInfo(`[/yuri] Selected API Source: NekoBot (type: ${sourceObj.type})`);
             imageData = await fetchNekoBot(sourceObj.type);
+        } else if (sourceObj.id === 'nekosv4') {
+            logInfo(`[/yuri] Selected API Source: NekosV4 (${sourceObj.endpoint})`);
+            imageData = await fetchNekosV4(sourceObj.endpoint);
         }
 
         if (!imageData || imageData.error) {
