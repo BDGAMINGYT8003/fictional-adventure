@@ -56,7 +56,7 @@ Used for fetching high-quality NSFW and SFW anime artwork via tags.
 *   `waifu`
 
 ## 4. Waifu.pics
-Used for fetching NSFW anime media.
+Used for fetching NSFW anime media. *(Note: This API is currently disabled globally in the code due to domain expiration, but is preserved rather than deleted so it can easily be re-enabled if the developers renew the website domain.)*
 *   `blowjob`
 *   `neko`
 *   `waifu`
@@ -132,3 +132,13 @@ Used across the entire bot structure to provide massive pools of Anime and Real 
 *   `pussy`
 *   `tentacle`
 *   `thigh`
+
+## 10. Nekos API
+Used for fetching a massive variety of explicit and suggestive anime artwork via targeted tag queries.
+*   `anal`
+*   `catgirl`
+*   `maid`
+*   `masturbating`
+*   `pussy`
+*   `threesome`
+*   `yuri`
