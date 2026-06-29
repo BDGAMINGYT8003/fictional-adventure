@@ -3,7 +3,7 @@
 This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
 Check out [APIs.md](./APIs.md) for a full list of supported APIs and endpoints.
 
-## What's New in v1.3
+## What's New in v1.2
 *   **Integrated Porngifs.tv Scraper:** Implemented a new custom scraper for `porngifs.tv` that directly bypasses their UI to fetch high-quality animated `.webp` and `.gif` payloads. This new high-speed source has been injected directly into the randomized `/gif` command pool, natively leveraging Discord's new animated WebP support to deliver media without external FFmpeg processing.
 
 ---
