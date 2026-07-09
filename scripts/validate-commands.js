@@ -1,11 +1,33 @@
 const assert = require('assert');
-const { commandPayloads } = require('../src/commands');
-const { MEDIA_COMMANDS } = require('../src/config/mediaCatalog');
+const { COMMANDS, commandPayloads } = require('../src/commands');
 const { providers } = require('../src/services/mediaProviders');
+
 const payloads = commandPayloads();
-assert(payloads.length >= 39, `expected at least 39 commands, got ${payloads.length}`);
-const providersUsed = new Set();
-for (const def of MEDIA_COMMANDS) for (const source of [...(def.sources || []), ...(def.anime || []), ...(def.real || [])]) providersUsed.add(source.provider);
-for (const provider of providersUsed) assert(providers[provider], `missing provider implementation: ${provider}`);
-for (const payload of payloads) assert(payload.name && payload.description, `invalid payload: ${payload.name}`);
-console.log(`Validated ${payloads.length} commands and ${providersUsed.size} media providers.`);
+const names = payloads.map((payload) => payload.name);
+const requiredProviders = [
+    'abd',
+    'nekobot',
+    'nekosV4',
+    'oboobs',
+    'obutts',
+    'porngifs',
+    'porngifsTv',
+    'purrbot',
+    'sexcom',
+    'waifuIm',
+    'waifuPics',
+];
+
+assert.strictEqual(payloads.length, 39, 'expected exactly 39 commands');
+assert.strictEqual(new Set(names).size, names.length, 'command names must be unique');
+
+for (const command of COMMANDS) {
+    assert(command.data.name, 'command must expose a data name');
+    assert.strictEqual(typeof command.execute, 'function', command.data.name + ' must expose execute()');
+}
+
+for (const provider of requiredProviders) {
+    assert(providers[provider], 'missing provider implementation: ' + provider);
+}
+
+console.log('Validated ' + payloads.length + ' individually declared commands.');

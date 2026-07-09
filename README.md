@@ -1,11 +1,11 @@
 # Discord NSFW Media Bot
 
-A Discord.js v14 bot that serves age-restricted media commands with centralized provider handling, modern interaction contexts, and a separate command deployment workflow.
+A Discord.js v14 bot that serves age-restricted media commands with individually declared command modules, provider handling, modern interaction contexts, and a separate command deployment workflow.
 
 ## Important Discord Notes
 
 - Adult media commands are created with `nsfw: true`, matching Discord's age-restricted command guidance in `llms-full.txt`.
-- Commands use modern `integration_types` and `contexts` instead of deprecated `dm_permission`.
+- Commands are written as individual modules and use modern `integration_types` and `contexts` instead of deprecated `dm_permission`.
 - Slash commands are deployed with `npm run deploy:commands`; startup no longer mutates global command state.
 
 ## Setup
