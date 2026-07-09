@@ -1,0 +1,2 @@
+'use strict';
+module.exports = { data: { name: 'help', description: 'Show available commands', integration_types: [0,1], contexts: [0,1,2] }, async execute(ctx) { const names = [...ctx.commands.keys()].sort().map(n => `\`/${n}\``).join(', '); return ctx.edit({ embeds: [{ title: '📚 ▸ Help', description: `Available commands:\n${names}\n\nNSFW commands require an NSFW-marked guild channel unless used in DMs.`, color: 0xfee75c }] }); } };

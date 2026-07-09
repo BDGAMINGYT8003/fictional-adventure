@@ -1,0 +1,2 @@
+'use strict';
+module.exports = { data: { name: 'invite', description: 'Get the bot invite link', integration_types: [0,1], contexts: [0,1,2] }, async execute(ctx) { const url = `https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&scope=bot%20applications.commands&permissions=274878221312`; return ctx.edit({ embeds: [{ title: '🔗 ▸ Invite', description: `[Click here to invite the bot](${url})`, color: 0x5865f2 }] }); } };
