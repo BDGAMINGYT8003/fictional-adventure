@@ -1,87 +1,22 @@
-# Discord NSFW Media Bot
+# Discord NSFW Raw API Bot
 
-This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
-Check out [APIs.md](./APIs.md) for a full list of supported APIs and endpoints.
+This rewrite removes `discord.js` and talks directly to Discord API v10 and the Gateway. The implementation keeps the archived project's NSFW providers and commands while using raw REST interaction callbacks, webhook edits, command registration payloads, and a hand-written Gateway client.
 
-## What's New in v1.3
-*   **Integrated Porngifs.tv Scraper:** Implemented a new custom scraper for `porngifs.tv` that directly bypasses their UI to fetch high-quality animated `.webp` and `.gif` payloads. This new high-speed source has been injected directly into the randomized `/gif` command pool, natively leveraging Discord's new animated WebP support to deliver media without external FFmpeg processing.
+## Setup
 
----
+Required environment variables:
 
-## 🔞 Available Slash Commands
+- `BOT_TOKEN` - Discord bot token.
+- `CLIENT_ID` - Discord application/client ID.
+- `WAIFU_IM_KEY` - Optional Waifu.im API key.
+- `WAIFU_PICS=false` - Optional flag to disable waifu.pics providers.
 
-The bot comes pre-loaded with a massive directory of specific fetishes, categories, and utility commands:
+## Commands
 
-*   `/4k`
-*   `/anal` *(Includes optional Real/Anime style filter)*
-*   `/ass` *(Includes optional Real/Anime style filter)*
-*   `/blowjob` *(Includes optional Real/Anime style filter)*
-*   `/boobs` *(Includes optional Real/Anime style filter)*
-*   `/breeding`
-*   `/buttplug`
-*   `/cages`
-*   `/cum`
-*   `/ecchi`
-*   `/ero`
-*   `/feet` *(Includes optional Real/Anime style filter)*
-*   `/fuck`
-*   `/gif` *(Randomized hardcore GIFs from massive CDN pools)*
-*   `/gonewild`
-*   `/help` *(Dynamic, searchable directory of all commands)*
-*   `/hentai`
-*   `/invite` *(Generates an OAuth2 link to add the bot)*
-*   `/kitsune`
-*   `/legs`
-*   `/maid`
-*   `/midriff`
-*   `/milf`
-*   `/neko`
-*   `/paizuri`
-*   `/petgirls`
-*   `/ping` *(System diagnostics and latency metrics)*
-*   `/pussy`
-*   `/pussylick`
-*   `/selfie`
-*   `/smothering`
-*   `/socks`
-*   `/solo`
-*   `/tentacle`
-*   `/thigh` *(Includes optional Real/Anime style filter)*
-*   `/threesome`
-*   `/uniform`
-*   `/waifu`
-*   `/yuri`
+```bash
+npm install
+npm run register
+npm start
+```
 
-*Note: All media commands are strictly restricted to NSFW-marked channels in servers. However, they will work completely unrestricted in Direct Messages (DMs) with the bot.*
-
----
-
-## 🛠️ Configuration & Setup
-
-This bot is designed to be hosted 24/7 on environments like Replit, Heroku, or a VPS. It requires specific environment variables to function correctly.
-
-### Required Environment Variables (Secrets)
-> **Note:** The use of `.env` files is strictly prohibited by the architecture. You must pass these variables directly into the process environment or via your host's secret manager.
-
-*   `BOT_TOKEN`: Your Discord Developer Portal Bot Token.
-*   `CLIENT_ID`: The unique Application ID of your bot (Required for the `@mention` intro listener and the `/invite` generator).
-*   `WAIFU_IM_KEY`: The authorization token required to access the `v7` API of `waifu.im` for high-quality anime artwork.
-
-### Optional Environment Variables
-*   `TESTING_GUILD_ID`: (Optional) Provide a Discord Server ID to register experimental or in-development commands (those marked with `testOnly: true` in their script). If this variable is left blank, experimental commands will be safely ignored, preventing them from polluting the global slash command registry.
-
-### Execution
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the application:
-   ```bash
-   node index.js
-   ```
-
----
-
-## 🐛 Bug Reports
-If you encounter any bugs, glitches, or have feature improvements, please submit a **GitHub Issue** detailing the problem or your request.
+`llms-full.txt` remains in the repository as the Discord documentation reference. The previous implementation remains available through Git history; see `archive/README.md` for non-binary archive instructions.
