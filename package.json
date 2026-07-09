@@ -1,26 +1,22 @@
 {
-  "name": "app",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "discord-nsfw-media-bot",
+  "version": "2.0.0",
+  "description": "Discord.js v14 NSFW media bot with centralized provider handling and modern command deployment.",
+  "main": "src/index.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "deploy:commands": "node scripts/deploy-commands.js",
+    "check": "node --check src/index.js && node scripts/validate-commands.js",
+    "test": "node --test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/BDGAMINGYT8003/fictional-adventure.git"
-  },
-  "keywords": [],
+  "keywords": ["discord", "discord.js", "bot", "nsfw"],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/BDGAMINGYT8003/fictional-adventure/issues"
-  },
-  "homepage": "https://github.com/BDGAMINGYT8003/fictional-adventure#readme",
   "dependencies": {
     "axios": "^1.17.0",
     "chalk": "^4.1.2",
     "discord.js": "^14.25.1"
-  }
+  },
+  "devDependencies": {}
 }

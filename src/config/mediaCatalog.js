@@ -1,0 +1,38 @@
+const MEDIA_COMMANDS = [
+  { name: '4k', description: 'Delivers a random NSFW 4k image', title: 'NSFW 4k Image', sources: [{ provider: 'nekobot', type: '4k' }] },
+  { name: 'anal', description: 'Delivers a random NSFW anal image/GIF', title: 'NSFW Anal Image', style: true, anime: [{ provider: 'purrbot', path: 'anal/gif' }, { provider: 'abd', tag: 'anal' }, { provider: 'nekobot', type: 'hentai_anal' }, { provider: 'nekosV4', tags: ['anal'] }], real: [{ provider: 'nekobot', type: 'anal' }] },
+  { name: 'ass', description: 'Delivers a random NSFW ass image/GIF', title: 'NSFW Ass Image', style: true, anime: [{ provider: 'abd', tag: 'ass' }, { provider: 'waifuIm', tag: 'ass' }, { provider: 'nekobot', type: 'hass' }], real: [{ provider: 'obutts' }, { provider: 'nekobot', type: 'ass' }] },
+  { name: 'blowjob', description: 'Delivers a random NSFW blowjob image/GIF', title: 'NSFW Blowjob Image', style: true, anime: [{ provider: 'purrbot', path: 'blowjob/gif' }, { provider: 'waifuPics', category: 'blowjob' }, { provider: 'abd', tag: 'blowjob' }, { provider: 'waifuIm', tag: 'oral' }, { provider: 'nekobot', type: 'hentai' }], real: [{ provider: 'nekobot', type: 'blowjob' }] },
+  { name: 'boobs', description: 'Delivers a random NSFW boobs image/GIF', title: 'NSFW Boobs Image', style: true, anime: [{ provider: 'waifuIm', tag: 'oppai' }, { provider: 'nekobot', type: 'hboobs' }], real: [{ provider: 'oboobs' }, { provider: 'nekobot', type: 'boobs' }] },
+  { name: 'breeding', description: 'Delivers a random NSFW breeding image', title: 'NSFW Breeding Image', sources: [{ provider: 'abd', tag: 'breeding' }] },
+  { name: 'buttplug', description: 'Delivers a random NSFW buttplug image', title: 'NSFW Buttplug Image', sources: [{ provider: 'abd', tag: 'buttplug' }] },
+  { name: 'cages', description: 'Delivers a random NSFW cages image', title: 'NSFW Cages Image', sources: [{ provider: 'abd', tag: 'cages' }] },
+  { name: 'cum', description: 'Delivers a random NSFW cum image/GIF', title: 'NSFW Cum Image', sources: [{ provider: 'purrbot', path: 'cum/gif' }] },
+  { name: 'ecchi', description: 'Delivers a random ecchi image', title: 'NSFW Ecchi Image', sources: [{ provider: 'abd', tag: 'ecchi' }, { provider: 'waifuIm', tag: 'ecchi' }] },
+  { name: 'ero', description: 'Delivers a random ero image', title: 'NSFW Ero Image', sources: [{ provider: 'waifuIm', tag: 'ero' }] },
+  { name: 'feet', description: 'Delivers a random NSFW feet image/GIF', title: 'NSFW Feet Image', style: true, anime: [{ provider: 'abd', tag: 'feet' }], real: [{ provider: 'nekobot', type: 'feet' }] },
+  { name: 'fuck', description: 'Delivers a random NSFW fuck GIF', title: 'NSFW Fuck Image', sources: [{ provider: 'purrbot', path: 'fuck/gif' }] },
+  { name: 'gonewild', description: 'Delivers a random NSFW gonewild image', title: 'NSFW Gonewild Image', sources: [{ provider: 'nekobot', type: 'gonewild' }] },
+  { name: 'hentai', description: 'Delivers a random NSFW hentai image/GIF', title: 'NSFW Hentai Image', sources: [{ provider: 'waifuIm', tag: 'hentai' }, { provider: 'nekobot', type: 'hentai' }] },
+  { name: 'kitsune', description: 'Delivers a random NSFW kitsune image', title: 'NSFW Kitsune Image', sources: [{ provider: 'nekobot', type: 'hkitsune' }] },
+  { name: 'legs', description: 'Delivers a random NSFW legs image', title: 'NSFW Legs Image', sources: [{ provider: 'abd', tag: 'legs' }] },
+  { name: 'maid', description: 'Delivers a random maid image', title: 'NSFW Maid Image', sources: [{ provider: 'waifuIm', tag: 'maid' }, { provider: 'nekosV4', tags: ['maid'] }] },
+  { name: 'midriff', description: 'Delivers a random NSFW midriff image', title: 'NSFW Midriff Image', sources: [{ provider: 'nekobot', type: 'hmidriff' }] },
+  { name: 'milf', description: 'Delivers a random NSFW milf image', title: 'NSFW Milf Image', sources: [{ provider: 'abd', tag: 'milf' }, { provider: 'waifuIm', tag: 'milf' }] },
+  { name: 'neko', description: 'Delivers a random NSFW neko image/GIF', title: 'NSFW Neko Image', sources: [{ provider: 'purrbot', path: 'neko/gif' }, { provider: 'purrbot', path: 'neko/img' }, { provider: 'waifuPics', category: 'neko' }, { provider: 'abd', tag: 'neko' }, { provider: 'nekobot', type: 'lewdneko' }, { provider: 'nekosV4', tags: ['catgirl'] }] },
+  { name: 'paizuri', description: 'Delivers a random NSFW paizuri image', title: 'NSFW Paizuri Image', sources: [{ provider: 'abd', tag: 'paizuri' }, { provider: 'waifuIm', tag: 'paizuri' }, { provider: 'nekobot', type: 'paizuri' }] },
+  { name: 'petgirls', description: 'Delivers a random NSFW petgirls image', title: 'NSFW Petgirls Image', sources: [{ provider: 'abd', tag: 'petgirls' }] },
+  { name: 'pussy', description: 'Delivers a random NSFW pussy image/GIF', title: 'NSFW Pussy Image', sources: [{ provider: 'nekobot', type: 'pussy' }, { provider: 'nekosV4', tags: ['pussy'] }, { provider: 'abd', tag: 'masturbation' }] },
+  { name: 'pussylick', description: 'Delivers a random NSFW pussylick GIF', title: 'NSFW Pussylick Image', sources: [{ provider: 'purrbot', path: 'pussylick/gif' }] },
+  { name: 'selfie', description: 'Delivers a random NSFW selfie image', title: 'NSFW Selfie Image', sources: [{ provider: 'abd', tag: 'selfie' }, { provider: 'waifuIm', tag: 'selfies' }] },
+  { name: 'smothering', description: 'Delivers a random NSFW smothering image', title: 'NSFW Smothering Image', sources: [{ provider: 'abd', tag: 'smothering' }] },
+  { name: 'socks', description: 'Delivers a random NSFW socks image', title: 'NSFW Socks Image', sources: [{ provider: 'abd', tag: 'socks' }] },
+  { name: 'tentacle', description: 'Delivers a random NSFW tentacle image', title: 'NSFW Tentacle Image', sources: [{ provider: 'nekobot', type: 'tentacle' }] },
+  { name: 'thigh', description: 'Delivers a random NSFW thigh image/GIF', title: 'NSFW Thigh Image', style: true, anime: [{ provider: 'nekobot', type: 'hthigh' }], real: [{ provider: 'nekobot', type: 'thigh' }] },
+  { name: 'uniform', description: 'Delivers a random uniform image', title: 'NSFW Uniform Image', sources: [{ provider: 'waifuIm', tag: 'uniform' }] },
+  { name: 'waifu', description: 'Delivers a random waifu image', title: 'NSFW Waifu Image', sources: [{ provider: 'waifuPics', category: 'waifu' }, { provider: 'waifuIm', tag: 'waifu' }] },
+  { name: 'yuri', description: 'Delivers a random NSFW yuri image/GIF', title: 'NSFW Yuri Image', sources: [{ provider: 'purrbot', path: 'yuri/gif' }, { provider: 'abd', tag: 'yuri' }, { provider: 'nekobot', type: 'hyuri' }, { provider: 'nekosV4', tags: ['yuri'] }] }
+];
+
+const SPECIAL_COMMANDS = ['gif', 'help', 'invite', 'ping', 'solo', 'threesome'];
+module.exports = { MEDIA_COMMANDS, SPECIAL_COMMANDS };
