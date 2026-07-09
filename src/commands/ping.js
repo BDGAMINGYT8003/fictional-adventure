@@ -1,0 +1,2 @@
+'use strict';
+module.exports = { data: { name: 'ping', description: 'Shows bot latency and runtime diagnostics', integration_types: [0,1], contexts: [0,1,2] }, async execute(ctx) { const mem = process.memoryUsage(); return ctx.edit({ embeds: [{ title: '🏓 ▸ Pong', description: `Gateway heartbeat: ${ctx.heartbeat ?? 'n/a'} ms\nHeap used: ${(mem.heapUsed/1024/1024).toFixed(1)} MB\nUptime: ${Math.floor(process.uptime())} seconds`, color: 0x57f287 }] }); } };

@@ -1,0 +1,9 @@
+'use strict';
+const { ApplicationCommandOptionType } = require('../config/discord');
+const { fetchBySource } = require('../api/mediaFetchers');
+const { embed, errorEmbed, components } = require('./messages');
+function styleOption() { return { type: ApplicationCommandOptionType.STRING, name: 'style', description: 'Select the style (Anime or Real)', required: false, choices: [{ name: 'Anime', value: 'Anime' }, { name: 'Real', value: 'Real' }] }; }
+function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+function filtered(pool) { const active = process.env.WAIFU_PICS === 'false' ? pool.filter(s => s.id !== 'waifupics') : pool; return active.length ? active : pool; }
+function createMediaCommand(def) { return { data: { name: def.name, description: def.description, nsfw: def.nsfw !== false, integration_types: [0, 1], contexts: [0, 1, 2], options: def.hasStyle ? [styleOption()] : (def.options || []) }, async execute(ctx, savedStyle) { const style = savedStyle || ctx.options?.style; let pool = []; if (def.hasStyle) pool = style === 'Anime' ? def.anime : style === 'Real' ? def.real : [...def.anime, ...def.real]; else pool = [...(def.sources || []), ...(def.anime || []), ...(def.real || [])]; const source = pick(filtered(pool)); const image = await fetchBySource(source); if (!image || image.error) { return ctx.edit({ embeds: [errorEmbed(image?.error === 'TIMEOUT' ? 'API Timeout: The request took longer than 15 seconds. Please try again later.' : 'Failed to fetch image.')], components: [] }); } const refresh = style ? `refresh_${def.name}_${style}` : `refresh_${def.name}`; return ctx.edit({ embeds: [embed(def.title, image.buffer ? 'attachment://nsfw.gif' : image.url, ctx.user, image.source)], components: components(refresh, image.url), attachments: image.buffer ? [{ id: '0', filename: 'nsfw.gif', data: image.buffer }] : undefined }); } }; }
+module.exports = { createMediaCommand };
