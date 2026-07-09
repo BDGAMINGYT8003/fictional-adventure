@@ -1,87 +1,49 @@
 # Discord NSFW Media Bot
 
-This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
-Check out [APIs.md](./APIs.md) for a full list of supported APIs and endpoints.
+A Discord.js v14 bot that serves age-restricted media commands with individually declared command modules, provider handling, modern interaction contexts, and a separate command deployment workflow.
 
-## What's New in v1.3
-*   **Integrated Porngifs.tv Scraper:** Implemented a new custom scraper for `porngifs.tv` that directly bypasses their UI to fetch high-quality animated `.webp` and `.gif` payloads. This new high-speed source has been injected directly into the randomized `/gif` command pool, natively leveraging Discord's new animated WebP support to deliver media without external FFmpeg processing.
+## Important Discord Notes
 
----
+- Adult media commands are created with `nsfw: true`, matching Discord's age-restricted command guidance in `llms-full.txt`.
+- Commands are written as individual modules and use modern `integration_types` and `contexts` instead of deprecated `dm_permission`.
+- Slash commands are deployed with `npm run deploy:commands`; startup no longer mutates global command state.
 
-## 🔞 Available Slash Commands
+## Setup
 
-The bot comes pre-loaded with a massive directory of specific fetishes, categories, and utility commands:
+Required environment variables:
 
-*   `/4k`
-*   `/anal` *(Includes optional Real/Anime style filter)*
-*   `/ass` *(Includes optional Real/Anime style filter)*
-*   `/blowjob` *(Includes optional Real/Anime style filter)*
-*   `/boobs` *(Includes optional Real/Anime style filter)*
-*   `/breeding`
-*   `/buttplug`
-*   `/cages`
-*   `/cum`
-*   `/ecchi`
-*   `/ero`
-*   `/feet` *(Includes optional Real/Anime style filter)*
-*   `/fuck`
-*   `/gif` *(Randomized hardcore GIFs from massive CDN pools)*
-*   `/gonewild`
-*   `/help` *(Dynamic, searchable directory of all commands)*
-*   `/hentai`
-*   `/invite` *(Generates an OAuth2 link to add the bot)*
-*   `/kitsune`
-*   `/legs`
-*   `/maid`
-*   `/midriff`
-*   `/milf`
-*   `/neko`
-*   `/paizuri`
-*   `/petgirls`
-*   `/ping` *(System diagnostics and latency metrics)*
-*   `/pussy`
-*   `/pussylick`
-*   `/selfie`
-*   `/smothering`
-*   `/socks`
-*   `/solo`
-*   `/tentacle`
-*   `/thigh` *(Includes optional Real/Anime style filter)*
-*   `/threesome`
-*   `/uniform`
-*   `/waifu`
-*   `/yuri`
+- `BOT_TOKEN` - Discord bot token.
+- `CLIENT_ID` - Discord application ID.
 
-*Note: All media commands are strictly restricted to NSFW-marked channels in servers. However, they will work completely unrestricted in Direct Messages (DMs) with the bot.*
+Optional environment variables:
 
----
+- `WAIFU_IM_KEY` - Enables Waifu.im provider calls.
+- `WAIFU_PICS=false` - Disables Waifu.pics provider calls.
+- `NEKOBOT_AUTH` - Optional NekoBot authorization header, kept out of source control.
+- `API_TIMEOUT_MS` - Provider request timeout, default `15000`.
+- `MAX_ATTACHMENT_BYTES` - Attachment buffer limit, default `8388608`.
 
-## 🛠️ Configuration & Setup
+## Commands
 
-This bot is designed to be hosted 24/7 on environments like Replit, Heroku, or a VPS. It requires specific environment variables to function correctly.
+Run checks:
 
-### Required Environment Variables (Secrets)
-> **Note:** The use of `.env` files is strictly prohibited by the architecture. You must pass these variables directly into the process environment or via your host's secret manager.
+```bash
+npm run check
+npm test
+```
 
-*   `BOT_TOKEN`: Your Discord Developer Portal Bot Token.
-*   `CLIENT_ID`: The unique Application ID of your bot (Required for the `@mention` intro listener and the `/invite` generator).
-*   `WAIFU_IM_KEY`: The authorization token required to access the `v7` API of `waifu.im` for high-quality anime artwork.
+Deploy slash commands:
 
-### Optional Environment Variables
-*   `TESTING_GUILD_ID`: (Optional) Provide a Discord Server ID to register experimental or in-development commands (those marked with `testOnly: true` in their script). If this variable is left blank, experimental commands will be safely ignored, preventing them from polluting the global slash command registry.
+```bash
+npm run deploy:commands
+```
 
-### Execution
+Start the bot:
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the application:
-   ```bash
-   node index.js
-   ```
+```bash
+npm start
+```
 
----
+## Archive
 
-## 🐛 Bug Reports
-If you encounter any bugs, glitches, or have feature improvements, please submit a **GitHub Issue** detailing the problem or your request.
+The pre-rewrite repository was moved into `archive/original/`. `llms-full.txt` remains at the repository root as the active Discord documentation reference.
