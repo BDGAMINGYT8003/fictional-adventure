@@ -80,3 +80,36 @@ test('Discord API errors expose status and JSON code without retries', async () 
   );
   assert.equal(calls, 1);
 });
+
+test('non-idempotent requests can disable ambiguous transport and server retries', async () => {
+  let transportCalls = 0;
+  const transportClient = client(async () => {
+    transportCalls += 1;
+    throw new TypeError('socket closed after request write');
+  });
+  await assert.rejects(
+    transportClient.post('/interactions/123456789012345678/token/callback', {
+      body: { type: 5 },
+      retryTransient: false,
+    }),
+    /socket closed/,
+  );
+  assert.equal(transportCalls, 1);
+
+  let serverCalls = 0;
+  const serverClient = client(async () => {
+    serverCalls += 1;
+    return new Response(JSON.stringify({ message: 'temporary failure' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  });
+  await assert.rejects(
+    serverClient.post('/interactions/123456789012345678/token/callback', {
+      body: { type: 5 },
+      retryTransient: false,
+    }),
+    (error) => error.status === 502,
+  );
+  assert.equal(serverCalls, 1);
+});

@@ -61,7 +61,12 @@ export class BotApplication {
     });
 
     this.gateway.on('INTERACTION_CREATE', (interaction) => {
-      void this.interactionRouter.handle(interaction);
+      void this.interactionRouter.handle(interaction).catch((error) => {
+        this.logger.error('Unhandled interaction router failure.', {
+          interactionId: interaction?.id,
+          error,
+        });
+      });
     });
     this.gateway.on('MESSAGE_CREATE', (message) => {
       void this.messageRouter.handle(message).catch((error) => {

@@ -87,10 +87,13 @@ Exact query parameters:
 - `page={random integer from 1 through 10}`
 - `limit=40`
 
-A browser-style `User-Agent` is sent. A random item is selected from `data`;
-its `uri` has a terminal `.webp` changed to `.gif`, then is appended to
-`https://imagex1.sx.cdn.live`. The link button uses
-`https://www.sex.com/pin/{id}/`.
+The exact archived browser header is sent:
+
+`User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36`
+
+A random item is selected from `data`; its `uri` has a terminal `.webp`
+changed to `.gif`, then is appended to `https://imagex1.sx.cdn.live`. The link
+button uses `https://www.sex.com/pin/{id}/`.
 
 Retained niches:
 

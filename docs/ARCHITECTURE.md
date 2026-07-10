@@ -35,6 +35,12 @@ types. Long-running media commands immediately send a deferred callback, then
 edit the original interaction response through the webhook endpoint. Refresh
 buttons encode only the command option state needed to reproduce a request.
 
+Initial callbacks use at-most-once semantics: the responder locks before the
+HTTP request begins and does not retry ambiguous transport or server failures.
+A bounded 15-minute interaction-ID cache suppresses replayed Gateway
+dispatches. Already-acknowledged and expired interaction codes are treated as
+terminal, while legacy `refresh_*` component IDs remain migration-compatible.
+
 Guild media requests pass both Discord's command-level `nsfw` registration and
 a runtime channel check. Direct-message contexts preserve the original bot's
 behavior.
@@ -57,6 +63,7 @@ logged and the command tries the next source in its own declared pool.
 
 `manifest.js` records endpoint templates and the complete Sex.com niche list.
 `APIs.md` records all active parameters and headers in human-readable form.
+`COMMAND_PARITY.md` records the archived command-to-provider audit.
 
 ## Files and binary safety
 

@@ -80,3 +80,18 @@ and REST rate limits.
 - raw Gateway URL, identify/resume payload, and close-code behavior;
 - modal, autocomplete, option, and component-state parsing;
 - provider-specific NekoBot and Waifu.im header/query contracts.
+
+## Follow-up runtime verification
+
+The second verification pass executes every archived media command with
+mocked Discord builders and provider transports. Explicit option groups and
+the archived random source ranges are exercised, and the reachable provider
+calls are compared directly with each modern command declaration. Separate
+provider contract tests cover all 11 transports, including query objects,
+headers, response fields, random ranges, DNS/SNI routing, retry counts, and
+attachment behavior.
+
+This pass also hardened interaction handling against duplicate Gateway
+dispatches, ambiguous callback retries, expired tokens, legacy refresh IDs,
+and detached promise rejections. See `COMMAND_PARITY.md` and
+`TROUBLESHOOTING.md` for the resulting evidence and operational guidance.

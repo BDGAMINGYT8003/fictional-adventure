@@ -103,6 +103,7 @@ export class DiscordRestClient {
   }
 
   async #requestWithRetries(method, route, routeKey, options) {
+    const retryTransient = options.retryTransient !== false;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
       await this.#waitForRateLimit(routeKey);
 
@@ -110,7 +111,7 @@ export class DiscordRestClient {
       try {
         response = await this.#fetch(method, route, options);
       } catch (error) {
-        if (attempt === MAX_RETRIES) throw error;
+        if (!retryTransient || attempt === MAX_RETRIES) throw error;
         const delay = Math.min(1_000 * (2 ** attempt), 10_000);
         this.logger.warn('Discord request failed before receiving a response; retrying.', {
           method,
@@ -148,7 +149,7 @@ export class DiscordRestClient {
         continue;
       }
 
-      if (response.status >= 500 && response.status <= 599 && attempt < MAX_RETRIES) {
+      if (retryTransient && response.status >= 500 && response.status <= 599 && attempt < MAX_RETRIES) {
         const delay = Math.min(500 * (2 ** attempt), 8_000);
         await this.sleep(delay);
         continue;

@@ -101,4 +101,7 @@ archive against its source commit, rejects high-level Discord wrappers in the
 active runtime, and executes the unit and parity test suites.
 
 See [APIs.md](./APIs.md) for the complete provider contract and
-[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the runtime design.
+[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the runtime design. The
+[command parity report](./docs/COMMAND_PARITY.md) records every archived media
+mapping, and [troubleshooting](./docs/TROUBLESHOOTING.md) covers interaction
+acknowledgement errors and deployment performance.

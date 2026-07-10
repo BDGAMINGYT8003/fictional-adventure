@@ -5,16 +5,22 @@ import { MediaProviderError, providerError } from './errors.js';
 import { randomInteger } from '../../lib/random.js';
 import { requestHttpsBuffer } from './http.js';
 
-export async function fetchPorngifs(_source, context) {
+const defaultDependencies = Object.freeze({
+  lookup: dns.lookup,
+  randomInteger,
+  requestHttpsBuffer,
+});
+
+export async function fetchPorngifs(_source, context, dependencies = defaultDependencies) {
   const provider = 'porngifs.com';
   try {
-    const { address } = await dns.lookup('porngifs.com');
+    const { address } = await dependencies.lookup('porngifs.com');
     let lastError;
     for (let attempt = 0; attempt < 15; attempt += 1) {
-      const id = randomInteger(1, 39_239);
+      const id = dependencies.randomInteger(1, 39_239);
       const targetUrl = ProviderEndpoint.PORNGIFS_MEDIA.replace('{id}', String(id));
       try {
-        const download = await requestHttpsBuffer({
+        const download = await dependencies.requestHttpsBuffer({
           hostname: address,
           path: `/img/${id}`,
           servername: 'cdn.porngifs.com',
