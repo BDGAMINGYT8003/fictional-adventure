@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCommands } from './brain/command-loader.js';
 import { registerCommands } from './brain/command-registration.js';
+import { InteractionConflictMonitor } from './brain/interaction-conflict-monitor.js';
 import { InteractionRouter } from './brain/interaction-router.js';
 import { MessageRouter } from './brain/message-router.js';
 import { MediaHttpClient } from './brain/providers/http.js';
@@ -13,9 +14,10 @@ import { DiscordRestClient } from './discord/rest-client.js';
 const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 export class BotApplication {
-  constructor({ config, logger }) {
+  constructor({ config, logger, instanceLease = null }) {
     this.config = config;
     this.logger = logger;
+    this.instanceLease = instanceLease;
     this.providerAbortController = new AbortController();
     this.discordAbortController = new AbortController();
     this.rest = new DiscordRestClient({
@@ -37,6 +39,10 @@ export class BotApplication {
     this.shutdownPromise = null;
     this.rateLimiter = null;
     this.circuitBreaker = null;
+    this.interactionConflictMonitor = new InteractionConflictMonitor({
+      logger,
+      onConflict: (diagnostic) => this.#yieldCompetingSession(diagnostic),
+    });
   }
 
   async start() {
@@ -71,6 +77,7 @@ export class BotApplication {
       mediaHttp,
       rateLimiter: this.rateLimiter,
       circuitBreaker: this.circuitBreaker,
+      interactionConflictMonitor: this.interactionConflictMonitor,
       shutdownSignal: this.providerAbortController.signal,
       logger: this.logger,
     });
@@ -190,6 +197,12 @@ export class BotApplication {
         new Promise((resolve) => setTimeout(resolve, 250)),
       ]);
     }
+    try {
+      await this.instanceLease?.release();
+    } catch (error) {
+      this.logger.error('Could not release the bot instance lease.', { error });
+      process.exitCode = 1;
+    }
     this.logger.event('Bot stopped.', { graceful: completed, activeTasks: this.activeTasks.size });
   }
 
@@ -209,5 +222,12 @@ export class BotApplication {
       if (!settled) return false;
     }
     return true;
+  }
+
+  #yieldCompetingSession(diagnostic) {
+    if (this.stopping) return this.shutdownPromise;
+    return this.shutdown({
+      reason: `another process owns Discord interactions (code ${diagnostic.code})`,
+    });
   }
 }

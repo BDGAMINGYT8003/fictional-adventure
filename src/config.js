@@ -75,6 +75,8 @@ export function loadConfig(env = process.env, { allowMissing = false } = {}) {
     allowInsecureMediaTls: booleanValue(env.ALLOW_INSECURE_MEDIA_TLS, false),
     premiumUserIds: snowflakeList(env.PREMIUM_USER_IDS, 'PREMIUM_USER_IDS'),
     rateLimitStateFile: env.RATE_LIMIT_STATE_FILE?.trim() || '.runtime/rate-limits.json',
+    instanceLockFile: env.INSTANCE_LOCK_FILE?.trim() || '.runtime/bot-instance.lock',
+    instanceLockStaleMs: integerValue(env.INSTANCE_LOCK_STALE_MS, 30_000, { minimum: 10_000, maximum: 300_000 }),
     shutdownDrainMs: integerValue(env.SHUTDOWN_DRAIN_MS, 5_000, { minimum: 500, maximum: 30_000 }),
     shutdownSettleMs: integerValue(env.SHUTDOWN_SETTLE_MS, 2_000, { minimum: 250, maximum: 10_000 }),
     shutdownHardTimeoutMs: integerValue(env.SHUTDOWN_HARD_TIMEOUT_MS, 12_000, { minimum: 2_000, maximum: 60_000 }),

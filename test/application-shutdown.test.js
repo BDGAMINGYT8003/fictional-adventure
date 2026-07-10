@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BotApplication } from '../src/application.js';
+import { DiscordRestError } from '../src/discord/rest-client.js';
 import { Logger } from '../src/lib/logger.js';
 
 function application(overrides = {}) {
@@ -48,4 +49,32 @@ test('provider work is aborted after the drain window before Discord closes', as
     'gateway-stop',
     'quota-flush',
   ]);
+});
+
+test('a confirmed competing interaction consumer gracefully yields this Gateway session', async () => {
+  const { app, events } = application();
+  app.instanceLease = {
+    async release() { events.push('lease-release'); },
+  };
+  const error = new DiscordRestError('Interaction has already been acknowledged.', {
+    status: 400,
+    code: 40060,
+    details: { code: 40060 },
+    method: 'POST',
+    route: 'POST /interactions/:id/:token/callback',
+  });
+
+  app.interactionConflictMonitor.record({
+    error,
+    command: 'boobs',
+    source: 'command',
+    interactionId: '1525275540641288323',
+    responseState: 'unavailable',
+    elapsedMs: 327,
+    interactionAgeMs: 576,
+  });
+  await app.shutdownPromise;
+
+  assert.equal(app.stopping, true);
+  assert.deepEqual(events, ['reject-new-work', 'gateway-stop', 'quota-flush', 'lease-release']);
 });

@@ -16,6 +16,9 @@ Discord API reference, but it is intentionally ignored and never committed.
 - It bulk-overwrites the configured application-command scope on every start.
 - It then connects to Gateway v10, identifies, heartbeats, resumes interrupted
   sessions, and routes raw dispatch events.
+- An atomic heartbeat lease permits only one local bot process. If an isolated
+  host still uses the same token, callback-conflict detection makes the losing
+  Gateway session yield instead of continuously racing interactions.
 - Media commands acknowledge interactions before Discord's three-second
   deadline, query their own explicit provider pools, and fall back to the next
   provider when a source fails.
@@ -96,6 +99,10 @@ Optional:
 - `RATE_LIMIT_STATE_FILE`: persisted quota state; default
   `.runtime/rate-limits.json`. The containing runtime directory is ignored by
   Git.
+- `INSTANCE_LOCK_FILE`: local single-process lease; default
+  `.runtime/bot-instance.lock`.
+- `INSTANCE_LOCK_STALE_MS`: age after which a lease from an unreachable old
+  container can be reclaimed; default `30000`.
 - `SHUTDOWN_DRAIN_MS`: time to let active work finish before provider requests
   are cancelled; default `5000`.
 - `SHUTDOWN_SETTLE_MS`: additional Discord response settle window; default
@@ -106,6 +113,8 @@ Optional:
   styling in capable terminals and Replit consoles. Standard `FORCE_COLOR` and
   `NO_COLOR` variables are also honored.
 - `LOG_FORMAT`: `pretty` (default) or `json` for structured log collectors.
+- `CONSOLE_LOG_FILE`: persistent plain-text console capture used by the Replit
+  start supervisor; default `logs/discord-bot-console.txt`.
 
 ## Run on Replit or Node.js
 
@@ -114,7 +123,20 @@ Optional:
 3. Run `npm start` or press Replit's **Start bot** button.
 
 No separate command-registration script is needed. The startup sequence does
-that automatically before connecting the bot.
+that automatically before connecting the bot. The normal start command also
+mirrors all bot stdout and stderr to `logs/discord-bot-console.txt`; Replit's
+visible terminal may truncate old lines, but this file does not.
+
+Create a timestamped snapshot of all captured history at any time with:
+
+```sh
+npm run logs:export
+```
+
+The command prints the exported `.txt` path. Both the active log and exports
+are ignored by Git and created with owner-only permissions. `npm run
+start:direct` remains available for diagnostics, but intentionally bypasses
+the persistent capture supervisor.
 
 ## Emoji customization
 

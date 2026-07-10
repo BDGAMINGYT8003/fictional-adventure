@@ -5,7 +5,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node scripts/start-with-logs.mjs",
+    "start:direct": "node index.js",
+    "logs:export": "node scripts/export-logs.mjs",
     "check": "node scripts/check.mjs",
     "test": "node --test",
     "validate": "npm run check && npm test"

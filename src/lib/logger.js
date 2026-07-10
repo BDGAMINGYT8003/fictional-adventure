@@ -33,6 +33,10 @@ function redactString(value) {
     .replace(/\bBot\s+[^\s,;]+/giu, `Bot ${REDACTED}`);
 }
 
+export function redactLogText(value) {
+  return redactString(value);
+}
+
 export function redactSensitive(value, key = '', seen = new WeakSet()) {
   if (SENSITIVE_KEY.test(key)) return REDACTED;
   if (typeof value === 'string') return redactString(value);

@@ -29,6 +29,7 @@ function fixture(commands, overrides = {}) {
     mediaHttp: { withMaximumBytes: () => ({}) },
     rateLimiter: overrides.rateLimiter,
     circuitBreaker: overrides.circuitBreaker,
+    interactionConflictMonitor: overrides.interactionConflictMonitor,
     shutdownSignal: overrides.shutdownSignal,
     logger: overrides.logger ?? new Logger('error'),
     now: overrides.now,
@@ -227,6 +228,7 @@ test('duplicate Gateway dispatches execute an interaction at most once', async (
 
 test('already-acknowledged and expired interactions are terminal, not re-acknowledged', async () => {
   let calls = 0;
+  const diagnostics = [];
   const rest = {
     async post() {
       calls += 1;
@@ -239,9 +241,19 @@ test('already-acknowledged and expired interactions are terminal, not re-acknowl
       });
     },
   };
-  const { router } = fixture(new Map(), { rest, logger: silentLogger });
+  const interactionConflictMonitor = {
+    record(details) { diagnostics.push(details); },
+  };
+  const { router } = fixture(new Map(), {
+    rest,
+    logger: silentLogger,
+    interactionConflictMonitor,
+  });
   await router.handle(interaction(3, { custom_id: 'unknown:component' }));
   assert.equal(calls, 1);
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].error.code, 40060);
+  assert.equal(diagnostics[0].responseState, 'unavailable');
 });
 
 test('ambiguous callback transport failures do not trigger a second acknowledgement', async () => {

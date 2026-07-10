@@ -2,15 +2,18 @@
 
 ## Startup
 
-`index.js` validates configuration and starts `BotApplication`.
+`index.js` validates configuration, acquires an atomic single-instance lease,
+and starts `BotApplication`.
 
-1. `command-loader.js` imports every command module and validates its public
+1. `single-instance-lease.js` creates an owner-only lock with an atomic
+   create, local PID validation, stale-container recovery, and heartbeat.
+2. `command-loader.js` imports every command module and validates its public
    Discord command shape.
-2. `command-registration.js` bulk-overwrites the configured global and/or test
+3. `command-registration.js` bulk-overwrites the configured global and/or test
    guild command collection.
-3. `DiscordGatewayClient` calls `GET /gateway/bot` and opens Gateway v10.
-4. After `HELLO`, the client starts randomized heartbeats and sends `IDENTIFY`.
-5. Raw `INTERACTION_CREATE` and `MESSAGE_CREATE` dispatches are routed to the
+4. `DiscordGatewayClient` calls `GET /gateway/bot` and opens Gateway v10.
+5. After `HELLO`, the client starts randomized heartbeats and sends `IDENTIFY`.
+6. Raw `INTERACTION_CREATE` and `MESSAGE_CREATE` dispatches are routed to the
    corresponding brain modules.
 
 There is no manual post-deployment registration command.
@@ -44,6 +47,12 @@ All terminal symbols, embed icons, button emojis, navigation glyphs, bullets,
 and custom Discord emoji strings come from `src/config/emojis.js`. Static and
 unit checks reject presentation glyphs anywhere else in the active source.
 
+On Replit, `scripts/start-with-logs.mjs` supervises `index.js`, mirrors raw
+stdout and stderr to the terminal, strips ANSI controls from the persisted
+copy, and appends it to `logs/discord-bot-console.txt`. The active file is never
+rotated implicitly, so terminal history is not discarded. `logs:export`
+creates point-in-time text snapshots without interrupting the bot.
+
 ## Interaction routing
 
 The router handles command, component, autocomplete, and modal interaction
@@ -56,6 +65,13 @@ HTTP request begins and does not retry ambiguous transport or server failures.
 A bounded 15-minute interaction-ID cache suppresses replayed Gateway
 dispatches. Already-acknowledged and expired interaction codes are treated as
 terminal, while legacy `refresh_*` component IDs remain migration-compatible.
+
+`InteractionConflictMonitor` uses callback state and elapsed time to separate a
+real three-second expiry from cross-process ownership races. An initial `40060`
+or two unusually early `10062` responses prove another live token consumer;
+the losing application enters the normal graceful shutdown path. This handles
+isolated hosts that cannot see the local single-instance lease and prevents an
+endless callback race.
 
 Guild media requests pass both Discord's command-level `nsfw` registration and
 a runtime channel check. Direct-message contexts preserve the original bot's
@@ -126,4 +142,6 @@ rejections enter one idempotent shutdown path. The router first rejects new
 work, active requests receive a drain window, remaining provider I/O is
 cancelled, Discord responses receive a separate settle window, REST and
 Gateway transports close, and quota state flushes. A hard timeout force-closes
-both transports if any task refuses to settle.
+both transports if any task refuses to settle. The runtime releases the process
+lease only after this sequence finishes, with an idempotent startup-failure
+fallback around the application lifecycle.

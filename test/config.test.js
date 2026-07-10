@@ -17,6 +17,8 @@ test('configuration uses documented secure defaults', () => {
   assert.equal(config.gatewayIntents, 4_609);
   assert.deepEqual(config.premiumUserIds, []);
   assert.equal(config.rateLimitStateFile, '.runtime/rate-limits.json');
+  assert.equal(config.instanceLockFile, '.runtime/bot-instance.lock');
+  assert.equal(config.instanceLockStaleMs, 30_000);
   assert.equal(config.shutdownDrainMs, 5_000);
   assert.equal(config.shutdownSettleMs, 2_000);
   assert.equal(config.shutdownHardTimeoutMs, 12_000);

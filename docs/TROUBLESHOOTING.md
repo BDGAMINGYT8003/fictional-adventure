@@ -7,26 +7,44 @@ initial callback for that interaction before the failing callback arrived.
 An interaction may receive only one initial response, and that response must
 be sent within three seconds.
 
-The runtime protects this boundary in five ways:
+The July 10 console sample is conclusive: the interaction snowflakes were
+created only about 250 milliseconds before this process routed them, and
+Discord rejected its callback roughly 320-360 milliseconds later. That is far
+inside the three-second deadline. The bot still produced the visible Discord
+response because another live Gateway process using the same `BOT_TOKEN`
+acknowledged it first.
 
-1. The responder locks synchronously before starting its callback request.
-2. All POSTs default to at-most-once behavior and do not retry ambiguous
+The runtime protects this boundary in seven ways:
+
+1. An atomic heartbeat lease prevents a second process in the same Replit
+   filesystem from opening another Gateway session. Dead local owners are
+   detected by PID; leases from replaced containers expire safely.
+2. The responder locks synchronously before starting its callback request.
+3. All POSTs default to at-most-once behavior and do not retry ambiguous
    transport or 5xx failures. The first request may have reached Discord even
    if its HTTP response was lost. Explicit Discord 429 rejections still honor
    `retry_after` safely.
-3. Interaction IDs are retained for 15 minutes in a bounded 10,000-entry cache
+4. Interaction IDs are retained for 15 minutes in a bounded 10,000-entry cache
    so a replayed Gateway dispatch cannot execute twice in one process.
-4. Discord codes `40060`, `10062` (unknown interaction), and `10015` (expired
+5. Discord codes `40060`, `10062` (unknown interaction), and `10015` (expired
    interaction webhook) are terminal and never trigger another callback.
-5. Every router path and the detached Gateway listener have a final rejection
-   boundary, preventing an interaction failure from becoming an unhandled
-   promise rejection.
+6. Known terminal interaction outcomes are logged as concise diagnostics with
+   no exception stack and cannot become unhandled promise rejections.
+7. `40060` on an initial callback immediately proves a competing consumer. Two
+   sub-2.5-second `10062` responses in one minute provide the same evidence.
+   The losing process stops accepting work and gracefully closes its Gateway
+   session, leaving the process that successfully responded online.
 
-The remaining external cause is two active bot processes or replicas using the
-same `BOT_TOKEN`. Both Gateway sessions can receive the interaction, but only
-one can acknowledge it. Ensure that a development runner, deployment, old
-revision, or second replica is not still running with the same token. Stop the
-extra process before restarting the intended deployment.
+Every router path and the detached Gateway listener also have a final rejection
+boundary, preventing an interaction failure from becoming an unhandled promise
+rejection.
+
+Local files cannot coordinate isolated deployment filesystems. Keep exactly
+one Replit workspace Run or Deployment active for this token. Stop every old
+runner, deployment revision, autoscaled replica, or process on another host,
+then start only the intended deployment. If the other process cannot be found,
+reset the bot token in Discord's Developer Portal and update only the intended
+deployment secret.
 
 ## Old refresh buttons
 
@@ -44,7 +62,31 @@ Discord invalidates an interaction token if the initial callback does not
 arrive within three seconds. Media commands defer before making any provider
 request, so repeated `10062` errors usually indicate host event-loop stalls,
 severe network delay to Discord, or multiple competing processes rather than a
-slow media API.
+slow media API. The ownership monitor distinguishes sub-2.5-second rejections
+from genuine deadline misses and only yields after confirmed conflict evidence.
+
+## Persistent Replit console history
+
+`npm start` launches the bot through `scripts/start-with-logs.mjs`. It mirrors
+stdout and stderr to the colorized Replit terminal while appending a color-free
+copy to:
+
+```text
+logs/discord-bot-console.txt
+```
+
+The file starts capturing before `index.js` launches and appends a run boundary
+on every restart, so older lines remain available after Replit truncates its UI
+buffer. To create a timestamped, stable export while the bot is still running:
+
+```sh
+npm run logs:export
+```
+
+The command prints the resulting path under `logs/exports/`. To choose a custom
+relative or absolute destination, run `npm run logs:export -- my-export.txt`.
+The active file and snapshots are ignored by Git and use owner-only file
+permissions. A command started with `npm run start:direct` is not captured.
 
 ## Performance expectations
 

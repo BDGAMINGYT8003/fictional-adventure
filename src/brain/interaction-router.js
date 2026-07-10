@@ -7,6 +7,7 @@ import { commandNameForInteraction, parseMediaCustomId, requester } from '../dis
 import { isNsfwContext, nsfwErrorPayload } from './nsfw-guard.js';
 import { cooldownPayload } from './rate-limit/cooldown-payload.js';
 import { Emoji, uiText } from '../config/emojis.js';
+import { snowflakeTimestamp } from '../lib/snowflake.js';
 
 const INTERACTION_CACHE_TTL_MS = 15 * 60 * 1_000;
 const MAX_CACHED_INTERACTIONS = 10_000;
@@ -40,6 +41,7 @@ export class InteractionRouter {
     mediaHttp,
     rateLimiter = null,
     circuitBreaker = null,
+    interactionConflictMonitor = null,
     shutdownSignal = null,
     logger,
     now = Date.now,
@@ -52,6 +54,7 @@ export class InteractionRouter {
     this.mediaHttp = mediaHttp;
     this.rateLimiter = rateLimiter;
     this.circuitBreaker = circuitBreaker;
+    this.interactionConflictMonitor = interactionConflictMonitor;
     this.shutdownSignal = shutdownSignal;
     this.logger = logger.child({ subsystem: 'interaction-router' });
     this.now = now;
@@ -65,6 +68,7 @@ export class InteractionRouter {
   }
 
   async handle(interaction) {
+    const receivedAt = this.now();
     if (!this.#rememberInteraction(interaction?.id)) {
       this.logger.debug('Ignoring duplicate Gateway interaction dispatch.', {
         interactionId: interaction?.id,
@@ -184,15 +188,46 @@ export class InteractionRouter {
         reservation = null;
       }
       const unavailable = isInteractionUnavailableError(error);
-      const log = unavailable ? this.logger.warn.bind(this.logger) : this.logger.error.bind(this.logger);
-      log(unavailable
-        ? 'Ignoring an interaction that was already acknowledged or expired.'
-        : 'Unhandled interaction command error.', {
-        command: commandName,
-        interactionId: interaction.id,
-        responseState: responder.responseState,
-        error,
-      });
+      if (unavailable) {
+        const failedAt = this.now();
+        let interactionAgeMs = null;
+        try {
+          interactionAgeMs = failedAt - snowflakeTimestamp(interaction.id);
+        } catch {
+          // Discord IDs are snowflakes, but classification can fall back to local elapsed time.
+        }
+        const details = {
+          error,
+          command: commandName,
+          source,
+          interactionId: interaction.id,
+          responseState: responder.responseState,
+          elapsedMs: failedAt - receivedAt,
+          interactionAgeMs,
+        };
+        if (this.interactionConflictMonitor) {
+          this.interactionConflictMonitor.record(details);
+        } else {
+          this.logger.warn('Discord interaction is no longer available.', {
+            code: Number(error.code),
+            command: commandName,
+            source,
+            interactionId: interaction.id,
+            responseState: responder.responseState,
+            callbackElapsedMs: Math.max(0, Math.round(details.elapsedMs)),
+            interactionAgeMs: Number.isFinite(interactionAgeMs)
+              ? Math.max(0, Math.round(interactionAgeMs))
+              : null,
+          });
+        }
+      } else {
+        this.logger.error('Unhandled interaction command error.', {
+          command: commandName,
+          interactionId: interaction.id,
+          responseState: responder.responseState,
+          error,
+        });
+      }
 
       if (unavailable || interaction.type === InteractionType.PING) return;
       try {
@@ -218,7 +253,9 @@ export class InteractionRouter {
           : this.logger.error.bind(this.logger);
         responseLog(responseUnavailable
           ? 'Interaction expired before an error response could be sent.'
-          : 'Failed to report an interaction error to Discord.', responseError);
+          : 'Failed to report an interaction error to Discord.', responseUnavailable
+          ? { code: Number(responseError.code), responseState: responder.responseState }
+          : responseError);
       }
     }
   }
