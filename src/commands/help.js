@@ -4,6 +4,7 @@ import { ButtonStyle } from '../discord/constants.js';
 import { focusedOption, modalValue, optionValue, requester } from '../discord/interaction-data.js';
 import { avatarUrl, displayName } from '../lib/discord-user.js';
 import { randomColor } from '../lib/random.js';
+import { Emoji, uiText } from '../config/emojis.js';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -58,7 +59,7 @@ async function showDirectory(context, page) {
 
   await context.responder.editOriginal({
     embeds: [{
-      title: '🔞 ▸ Command Directory',
+      title: uiText(Emoji.ui.nsfw, 'Command Directory'),
       description,
       color: randomColor(),
       footer: footer(context.interaction, `Page ${boundedPage} of ${totalPages}`),
@@ -67,17 +68,17 @@ async function showDirectory(context, page) {
     components: [actionRow(
       button({
         customId: `help:page:${boundedPage - 1}`,
-        label: '◀ Previous',
+        label: `${Emoji.ui.previous} Previous`,
         disabled: boundedPage === 1,
       }),
       button({
         customId: `help:search:${boundedPage}`,
-        label: '🔍 ▸ Search',
+        label: uiText(Emoji.ui.search, 'Search'),
         style: ButtonStyle.SECONDARY,
       }),
       button({
         customId: `help:page:${boundedPage + 1}`,
-        label: 'Next ▶',
+        label: `Next ${Emoji.ui.next}`,
         disabled: boundedPage === totalPages,
       }),
     )],
@@ -90,13 +91,13 @@ async function showCommand(context, targetName, returnPage = 1) {
   if (!target || target.hidden) {
     await context.responder.editOriginal({
       embeds: [{
-        title: '❌ ▸ Error',
+        title: uiText(Emoji.ui.error, 'Error'),
         description: `Could not find information for command \`${targetName}\`.`,
         color: 0xed4245,
       }],
       components: [actionRow(button({
         customId: `help:page:${returnPage}`,
-        label: '🔙 ▸ Back to Directory',
+        label: uiText(Emoji.ui.back, 'Back to Directory'),
         style: ButtonStyle.SECONDARY,
       }))],
       attachments: [],
@@ -108,13 +109,13 @@ async function showCommand(context, targetName, returnPage = 1) {
   const index = commands.findIndex((command) => command.data.name === target.data.name);
   const page = index < 0 ? returnPage : Math.floor(index / ITEMS_PER_PAGE) + 1;
   const parameters = target.data.options?.length
-    ? target.data.options.map((item) => `• **\`${item.name}\`** ${item.required ? '(Required)' : '(Optional)'}\n${item.description}`).join('\n')
+    ? target.data.options.map((item) => `${Emoji.ui.bullet} **\`${item.name}\`** ${item.required ? '(Required)' : '(Optional)'}\n${item.description}`).join('\n')
     : 'No parameters are available for this command.';
   const user = requester(context.interaction);
 
   await context.responder.editOriginal({
     embeds: [{
-      title: `🔞 ▸ Command Details: /${target.data.name}`,
+      title: uiText(Emoji.ui.nsfw, `Command Details: /${target.data.name}`),
       description: `**Description:**\n${target.data.description}`,
       color: randomColor(),
       fields: [{ name: 'Parameters', value: parameters }],
@@ -123,7 +124,7 @@ async function showCommand(context, targetName, returnPage = 1) {
     }],
     components: [actionRow(button({
       customId: `help:page:${page}`,
-      label: '🔙 ▸ Back to Directory',
+      label: uiText(Emoji.ui.back, 'Back to Directory'),
       style: ButtonStyle.SECONDARY,
     }))],
     attachments: [],

@@ -4,6 +4,7 @@ import { BOT_INVITE_PERMISSIONS, ButtonStyle } from '../discord/constants.js';
 import { requester } from '../discord/interaction-data.js';
 import { avatarUrl, displayName } from '../lib/discord-user.js';
 import { randomColor } from '../lib/random.js';
+import { Emoji, uiText } from '../config/emojis.js';
 
 export function inviteUrl(clientId) {
   const url = new URL('https://discord.com/oauth2/authorize');
@@ -24,14 +25,14 @@ export default {
     const user = requester(context.interaction);
     await context.responder.editOriginal({
       embeds: [{
-        title: '✨ ▸ Invite Me to Your Server',
+        title: uiText(Emoji.ui.sparkle, 'Invite Me to Your Server'),
         description: 'Use the button below to authorize the bot with only the permissions required for replies, embeds, and media attachments.',
         color: randomColor(),
         footer: { text: displayName(user), icon_url: avatarUrl(user) },
         timestamp: new Date().toISOString(),
       }],
       components: [actionRow(button({
-        label: '➕ ▸ Invite Bot',
+        label: uiText(Emoji.ui.add, 'Invite Bot'),
         style: ButtonStyle.LINK,
         url: inviteUrl(context.config.clientId),
       }))],

@@ -4,7 +4,7 @@ import { styleOption } from '../brain/command-schema.js';
 export default defineMediaCommand({
   name: 'feet',
   description: 'Delivers a random NSFW feet Image/GIF',
-  title: '🔞 ▸ NSFW Feet Image',
+  title: 'NSFW Feet Image',
   options: [styleOption],
   optionName: 'style',
   groups: {

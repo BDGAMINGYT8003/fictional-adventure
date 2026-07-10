@@ -4,7 +4,7 @@ import { stringOption } from '../brain/command-schema.js';
 export default defineMediaCommand({
   name: 'threesome',
   description: 'Delivers a random threesome GIF',
-  title: '🔞 ▸ NSFW Threesome Image',
+  title: 'NSFW Threesome Image',
   options: [stringOption({
     name: 'type',
     description: 'The type of threesome',

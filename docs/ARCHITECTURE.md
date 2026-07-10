@@ -40,6 +40,10 @@ their application/subsystem context, errors keep stack traces, Replit and TTY
 color support is detected automatically, and JSON output remains available
 for external log collectors.
 
+All terminal symbols, embed icons, button emojis, navigation glyphs, bullets,
+and custom Discord emoji strings come from `src/config/emojis.js`. Static and
+unit checks reject presentation glyphs anywhere else in the active source.
+
 ## Interaction routing
 
 The router handles command, component, autocomplete, and modal interaction
@@ -70,6 +74,12 @@ only after the original Discord response is successfully edited with media;
 all provider, parsing, download, and Discord response failures roll it back.
 This provides concurrency safety without charging failed attempts. Successful
 usage is atomically persisted to the ignored `.runtime/` directory.
+
+`/premium` renders the current target snapshot with tier-aware Subscribe or
+Manage controls. Its emoji-only refresh component stores the target and
+original viewer IDs in a bounded custom ID, applies the normal utility
+cooldown, acknowledges with a deferred message update, and edits the same
+message from a new local quota snapshot.
 
 ## Command brain
 

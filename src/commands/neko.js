@@ -3,7 +3,7 @@ import { defineMediaCommand } from '../brain/media-command.js';
 export default defineMediaCommand({
   name: 'neko',
   description: 'Delivers a random NSFW neko Image/GIF',
-  title: '🔞 ▸ NSFW Neko Image',
+  title: 'NSFW Neko Image',
   sources: [
     { provider: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/gif' },
     { provider: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/neko/img' },

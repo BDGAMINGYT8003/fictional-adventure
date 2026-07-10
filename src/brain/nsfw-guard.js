@@ -1,4 +1,5 @@
 import { ChannelType } from '../discord/constants.js';
+import { Emoji, uiText } from '../config/emojis.js';
 
 const DM_TYPES = new Set([ChannelType.DM, ChannelType.GROUP_DM]);
 
@@ -11,7 +12,7 @@ export function isNsfwContext(interaction) {
 export function nsfwErrorPayload() {
   return {
     embeds: [{
-      title: '❌ ▸ Not an age-restricted channel',
+      title: uiText(Emoji.ui.error, 'Not an age-restricted channel'),
       description: 'This command can only be used in a Discord channel marked age-restricted (NSFW).',
       color: 0xed4245,
     }],

@@ -151,6 +151,35 @@ test('router decodes media component state and executes the target command', asy
   assert.equal(requests[0].options.body.data.content, 'ok');
 });
 
+test('premium refresh components use utility cooldowns and preserve component state', async () => {
+  const events = [];
+  const customId = 'premium:refresh:345678901234567890:345678901234567890';
+  const rateLimiter = {
+    consumeUtility(userId) {
+      events.push({ type: 'cooldown', userId });
+      return { allowed: true };
+    },
+  };
+  const commands = new Map([['premium', {
+    kind: 'utility',
+    rateLimitComponents: true,
+    data: { name: 'premium', nsfw: false },
+    async execute(context, state) {
+      events.push({ type: 'execute', source: context.source, state });
+      await context.responder.deferUpdate();
+    },
+  }]]);
+  const { requests, router } = fixture(commands, { rateLimiter });
+  await router.handle(interaction(3, { custom_id: customId }, {
+    id: '123456789012345681',
+  }));
+  assert.deepEqual(events, [
+    { type: 'cooldown', userId: '345678901234567890' },
+    { type: 'execute', source: 'component', state: { customId } },
+  ]);
+  assert.equal(requests[0].options.body.type, 6);
+});
+
 test('stale autocomplete interactions receive an empty autocomplete result', async () => {
   const { requests, router } = fixture(new Map());
   await router.handle(interaction(4, {

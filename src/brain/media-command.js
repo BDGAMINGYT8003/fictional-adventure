@@ -3,6 +3,7 @@ import { commandData } from './command-schema.js';
 import { actionRow, button } from '../discord/components.js';
 import { ButtonStyle } from '../discord/constants.js';
 import { mediaCustomId, optionValue, requester } from '../discord/interaction-data.js';
+import { Emoji, uiText } from '../config/emojis.js';
 import { avatarUrl, displayName } from '../lib/discord-user.js';
 import { randomColor, choose, shuffle } from '../lib/random.js';
 
@@ -93,7 +94,7 @@ export function defineMediaCommand(specification) {
       if (!result) {
         await context.responder.editOriginal({
           embeds: [{
-            title: '❌ ▸ Error',
+            title: uiText(Emoji.ui.error, 'Error'),
             description: errorDescription(errors),
             color: 0xed4245,
           }],
@@ -106,7 +107,7 @@ export function defineMediaCommand(specification) {
       const user = requester(context.interaction);
       const imageReference = result.buffer ? `attachment://${result.fileName}` : result.url;
       const embed = {
-        title: specification.title,
+        title: uiText(Emoji.ui.nsfw, specification.title),
         color: randomColor(),
         image: { url: imageReference },
         footer: {
@@ -118,11 +119,11 @@ export function defineMediaCommand(specification) {
 
       const buttons = [button({
         customId: mediaCustomId(specification.name, refreshState(specification, context.interaction, state)),
-        label: '🔄 ▸ Refresh',
+        label: uiText(Emoji.ui.refresh, 'Refresh'),
       })];
       const link = result.watchUrl || result.url;
       if (validLink(link)) {
-        buttons.push(button({ label: '📎 ▸ Link', style: ButtonStyle.LINK, url: link }));
+        buttons.push(button({ label: uiText(Emoji.ui.link, 'Link'), style: ButtonStyle.LINK, url: link }));
       }
 
       const body = {

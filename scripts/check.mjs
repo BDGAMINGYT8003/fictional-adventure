@@ -66,6 +66,10 @@ const activeCodeFiles = files.filter((file) =>
 for (const file of activeCodeFiles) {
   const content = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(content, /(?:from\s+|require\()['"](?:discord\.js|eris|oceanic\.js)/, `High-level Discord wrapper in ${file}`);
+  if (file.startsWith('src/') && file !== 'src/config/emojis.js') {
+    assert.doesNotMatch(content, /[^\x00-\x7F]/u, `Presentation glyph outside src/config/emojis.js: ${file}`);
+    assert.doesNotMatch(content, /<a?:[A-Za-z0-9_]+:\d+>/u, `Custom Discord emoji outside src/config/emojis.js: ${file}`);
+  }
   const syntax = spawnSync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8' });
   assert.equal(syntax.status, 0, `${file} failed syntax validation:\n${syntax.stderr}`);
 }

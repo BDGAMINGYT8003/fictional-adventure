@@ -6,6 +6,7 @@ import {
 import { commandNameForInteraction, parseMediaCustomId, requester } from '../discord/interaction-data.js';
 import { isNsfwContext, nsfwErrorPayload } from './nsfw-guard.js';
 import { cooldownPayload } from './rate-limit/cooldown-payload.js';
+import { Emoji, uiText } from '../config/emojis.js';
 
 const INTERACTION_CACHE_TTL_MS = 15 * 60 * 1_000;
 const MAX_CACHED_INTERACTIONS = 10_000;
@@ -25,6 +26,7 @@ function componentTarget(customId, commands) {
   if (customId.startsWith('refresh_')) return legacyRefreshTarget(customId, commands);
   if (customId.startsWith('help:')) return { commandName: 'help', state: { customId } };
   if (customId.startsWith('ping:')) return { commandName: 'ping', state: { customId } };
+  if (customId.startsWith('premium:refresh:')) return { commandName: 'premium', state: { customId } };
   if (customId.startsWith('intro:')) return { commandName: 'intro', state: { customId } };
   return null;
 }
@@ -131,7 +133,8 @@ export class InteractionRouter {
       if (this.rateLimiter && source !== 'autocomplete') {
         const userId = requester(interaction)?.id;
         const mediaRequest = command.kind === 'media' && (source === 'command' || source === 'component');
-        const utilityRequest = command.kind !== 'media' && source === 'command';
+        const utilityRequest = command.kind !== 'media'
+          && (source === 'command' || (command.rateLimitComponents && source === 'component'));
         if (userId && (mediaRequest || utilityRequest)) {
           const gate = mediaRequest
             ? this.rateLimiter.reserveMedia(userId)
@@ -195,7 +198,7 @@ export class InteractionRouter {
       try {
         const data = {
           embeds: [{
-            title: '❌ ▸ Error',
+            title: uiText(Emoji.ui.error, 'Error'),
             description: 'An unexpected error occurred while executing this interaction.',
             color: 0xed4245,
           }],

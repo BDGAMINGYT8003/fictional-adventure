@@ -4,7 +4,7 @@ import { styleOption } from '../brain/command-schema.js';
 export default defineMediaCommand({
   name: 'boobs',
   description: 'Delivers a random NSFW boobs Image/GIF',
-  title: '🔞 ▸ NSFW Boobs Image',
+  title: 'NSFW Boobs Image',
   options: [styleOption],
   optionName: 'style',
   groups: {

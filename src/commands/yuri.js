@@ -3,7 +3,7 @@ import { defineMediaCommand } from '../brain/media-command.js';
 export default defineMediaCommand({
   name: 'yuri',
   description: 'Delivers a random NSFW yuri Image/GIF',
-  title: '🔞 ▸ NSFW Yuri Image',
+  title: 'NSFW Yuri Image',
   sources: [
     { provider: 'purrbot', endpoint: 'https://purrbot.site/api/img/nsfw/yuri/gif' },
     { provider: 'abd', endpoint: 'https://api.n-sfw.com/nsfw/yuri' },

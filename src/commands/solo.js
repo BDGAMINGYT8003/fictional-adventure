@@ -4,7 +4,7 @@ import { stringOption } from '../brain/command-schema.js';
 export default defineMediaCommand({
   name: 'solo',
   description: 'Delivers a random solo masturbation Image/GIF',
-  title: '🔞 ▸ NSFW Solo Image',
+  title: 'NSFW Solo Image',
   options: [stringOption({
     name: 'gender',
     description: 'The gender for the solo Image/GIF',

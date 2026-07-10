@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { inspect } from 'node:util';
 import { Chalk } from 'chalk';
+import { Emoji } from '../config/emojis.js';
 
 const PRIORITY = Object.freeze({
   debug: 10,
@@ -13,13 +14,13 @@ const PRIORITY = Object.freeze({
 });
 
 const KIND = Object.freeze({
-  debug: { label: 'DEBUG', symbol: '·', style: (chalk) => chalk.gray },
-  boot: { label: 'BOOT', symbol: '◉', style: (chalk) => chalk.bold.magenta },
-  event: { label: 'EVENT', symbol: '◆', style: (chalk) => chalk.bold.blue },
-  info: { label: 'INFO', symbol: '●', style: (chalk) => chalk.cyan },
-  success: { label: 'SUCCESS', symbol: '✓', style: (chalk) => chalk.bold.green },
-  warn: { label: 'WARN', symbol: '▲', style: (chalk) => chalk.bold.yellow },
-  error: { label: 'ERROR', symbol: '✖', style: (chalk) => chalk.bold.red },
+  debug: { label: 'DEBUG', symbol: Emoji.terminal.debug, style: (chalk) => chalk.gray },
+  boot: { label: 'BOOT', symbol: Emoji.terminal.boot, style: (chalk) => chalk.bold.magenta },
+  event: { label: 'EVENT', symbol: Emoji.terminal.event, style: (chalk) => chalk.bold.blue },
+  info: { label: 'INFO', symbol: Emoji.terminal.info, style: (chalk) => chalk.cyan },
+  success: { label: 'SUCCESS', symbol: Emoji.terminal.success, style: (chalk) => chalk.bold.green },
+  warn: { label: 'WARN', symbol: Emoji.terminal.warn, style: (chalk) => chalk.bold.yellow },
+  error: { label: 'ERROR', symbol: Emoji.terminal.error, style: (chalk) => chalk.bold.red },
 });
 
 const REDACTED = '[REDACTED]';
@@ -219,7 +220,7 @@ export class Logger {
     for (const { error } of errors) {
       const stackLines = String(error.stack ?? '').split('\n').slice(1);
       for (const line of stackLines) {
-        if (line.trim()) this.#emit(kind, chalk.dim(`    ↳ ${redactString(line.trim())}`));
+        if (line.trim()) this.#emit(kind, chalk.dim(`    ${Emoji.terminal.stack} ${redactString(line.trim())}`));
       }
     }
   }

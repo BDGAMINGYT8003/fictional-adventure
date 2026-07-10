@@ -53,7 +53,9 @@ Utility commands:
 - `/ping` reports Gateway latency, interaction roundtrip, uptime, memory,
   platform, and guild count.
 - `/premium [user]` reports Free/Premium status and remaining account-wide
-  quotas. Premium membership currently comes from a deployment allowlist.
+  quotas. Its Subscribe/Manage link is paired with an emoji-only refresh
+  button that updates the existing message from the latest usage snapshot.
+  Premium membership currently comes from a deployment allowlist.
 
 The original options are preserved:
 
@@ -113,6 +115,12 @@ Optional:
 
 No separate command-registration script is needed. The startup sequence does
 that automatically before connecting the bot.
+
+## Emoji customization
+
+Every UI, command, custom Discord, and terminal emoji is defined in
+`src/config/emojis.js`. No presentation glyph is hardcoded elsewhere under
+`src/`, so changing that one file updates the complete application consistently.
 
 ## Verification
 
