@@ -10,8 +10,10 @@ be sent within three seconds.
 The runtime protects this boundary in five ways:
 
 1. The responder locks synchronously before starting its callback request.
-2. Callback POSTs do not retry ambiguous transport or 5xx failures. The first
-   request may have reached Discord even if its HTTP response was lost.
+2. All POSTs default to at-most-once behavior and do not retry ambiguous
+   transport or 5xx failures. The first request may have reached Discord even
+   if its HTTP response was lost. Explicit Discord 429 rejections still honor
+   `retry_after` safely.
 3. Interaction IDs are retained for 15 minutes in a bounded 10,000-entry cache
    so a replayed Gateway dispatch cannot execute twice in one process.
 4. Discord codes `40060`, `10062` (unknown interaction), and `10015` (expired
@@ -56,7 +58,26 @@ quotas, and other users. Node's Fetch implementation already pools ordinary
 HTTP connections, and media is kept in bounded memory without filesystem or
 conversion work.
 
+Consecutive upstream failures now open a provider-specific circuit for 30–120
+seconds. Recovery is tested by one real request after that interval; the bot
+does not generate background probes. Account quotas are also checked before
+provider work, which protects upstreams and host resources without charging
+failed media attempts.
+
 If production metrics later show sustained load, the safest next additions
-are a short provider circuit breaker, a bounded media-work queue, and latency
-metrics per provider. Parallel provider racing and unbounded response caching
-are not recommended for this workload.
+are a bounded media-work queue and latency metrics per provider. Parallel
+provider racing and unbounded response caching are not recommended for this
+workload.
+
+## Cooldowns and quota state
+
+Free media quota is 60 successful displays per rolling 60 seconds and 1,000
+per UTC day. Premium removes the minute ceiling and allows 5,000 per UTC day.
+Free utility slash commands use a two-second cooldown. All contexts share the
+same user-ID record.
+
+State is persisted to `RATE_LIMIT_STATE_FILE` (default
+`.runtime/rate-limits.json`). Keep this path on durable storage if daily limits
+must survive deployment replacement. One bot process is expected; multiple
+replicas require a shared transactional store before they can coordinate the
+same quotas safely.

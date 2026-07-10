@@ -54,6 +54,15 @@ test('deferred interactions edit the original webhook response with files', asyn
   });
 });
 
+test('followup message POSTs explicitly use at-most-once delivery', async () => {
+  const { requests, responder } = fixture();
+  await responder.defer();
+  await responder.followup({ content: 'one followup' });
+  assert.equal(requests[1].route, '/webhooks/234567890123456789/interaction-token');
+  assert.equal(requests[1].options.retryTransient, false);
+  assert.deepEqual(requests[1].options.query, { wait: true });
+});
+
 test('interaction acknowledgements lock before the callback request settles', async () => {
   let release;
   const firstRequest = new Promise((resolve) => { release = resolve; });

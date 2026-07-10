@@ -1,10 +1,11 @@
 export class MediaProviderError extends Error {
-  constructor(message, { code = 'PROVIDER_ERROR', provider, cause, status } = {}) {
+  constructor(message, { code = 'PROVIDER_ERROR', provider, cause, status, retryAt } = {}) {
     super(message, { cause });
     this.name = 'MediaProviderError';
     this.code = code;
     this.provider = provider;
     this.status = status;
+    this.retryAt = retryAt;
   }
 }
 

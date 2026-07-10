@@ -100,7 +100,7 @@ export function defineMediaCommand(specification) {
           components: [],
           attachments: [],
         });
-        return;
+        return { mediaDisplayed: false };
       }
 
       const user = requester(context.interaction);
@@ -134,6 +134,7 @@ export function defineMediaCommand(specification) {
         ? [{ data: result.buffer, name: result.fileName, contentType: result.contentType }]
         : [];
       await context.responder.editOriginal(body, files);
+      return { mediaDisplayed: true };
     },
   };
 }

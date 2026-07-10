@@ -7,8 +7,8 @@ Its two focused runtime dependencies are the low-level `ws` WebSocket
 transport and Chalk for portable ANSI terminal styling.
 
 The original implementation is preserved byte-for-byte in `archive/legacy/`.
-`llms-full.txt` remains at the repository root as the active Discord API
-reference.
+A complete `llms-full.txt` may be kept at the repository root as a local
+Discord API reference, but it is intentionally ignored and never committed.
 
 ## Runtime behavior
 
@@ -19,6 +19,13 @@ reference.
 - Media commands acknowledge interactions before Discord's three-second
   deadline, query their own explicit provider pools, and fall back to the next
   provider when a source fails.
+- Free accounts receive 60 successful media requests per rolling minute and
+  1,000 per UTC day. Premium accounts remove the minute ceiling and receive
+  5,000 per UTC day. Failed provider/Discord executions do not consume media
+  quota, and concurrent requests reserve capacity before contacting a host.
+- Provider circuits open after consecutive upstream failures, skip that host
+  for 30–120 seconds, and allow one subsequent real request as the recovery
+  probe. The runtime never races or prefetches redundant provider requests.
 - Media footers show only the requesting user's display name and avatar;
   Discord renders the timestamp beside them, while provider URLs remain in the
   link buttons.
@@ -45,6 +52,8 @@ Utility commands:
 - `/invite` generates a least-permission bot installation URL.
 - `/ping` reports Gateway latency, interaction roundtrip, uptime, memory,
   platform, and guild count.
+- `/premium [user]` reports Free/Premium status and remaining account-wide
+  quotas. Premium membership currently comes from a deployment allowlist.
 
 The original options are preserved:
 
@@ -81,6 +90,15 @@ Optional:
 - `MEDIA_TIMEOUT_MS`: provider timeout; default `15000`.
 - `MAX_MEDIA_BYTES`: local ceiling; default `10485760` (10 MiB). The runtime
   also respects a lower `attachment_size_limit` sent with an interaction.
+- `PREMIUM_USER_IDS`: optional comma-separated Discord user-ID allowlist.
+- `RATE_LIMIT_STATE_FILE`: persisted quota state; default
+  `.runtime/rate-limits.json`. The containing runtime directory is ignored by
+  Git.
+- `SHUTDOWN_DRAIN_MS`: time to let active work finish before provider requests
+  are cancelled; default `5000`.
+- `SHUTDOWN_SETTLE_MS`: additional Discord response settle window; default
+  `2000`.
+- `SHUTDOWN_HARD_TIMEOUT_MS`: force-close fallback; default `12000`.
 - `LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
 - `LOG_COLORS`: `auto` (default), `always`, or `never`. Auto mode enables ANSI
   styling in capable terminals and Replit consoles. Standard `FORCE_COLOR` and

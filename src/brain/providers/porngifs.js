@@ -11,10 +11,40 @@ const defaultDependencies = Object.freeze({
   requestHttpsBuffer,
 });
 
+function withShutdownSignal(promise, signal) {
+  if (!signal) return promise;
+  if (signal.aborted) {
+    return Promise.reject(new MediaProviderError('Provider lookup was cancelled during shutdown.', {
+      code: 'ABORTED',
+      cause: signal.reason,
+    }));
+  }
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(new MediaProviderError('Provider lookup was cancelled during shutdown.', {
+      code: 'ABORTED',
+      cause: signal.reason,
+    }));
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(
+      (value) => {
+        signal.removeEventListener('abort', abort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener('abort', abort);
+        reject(error);
+      },
+    );
+  });
+}
+
 export async function fetchPorngifs(_source, context, dependencies = defaultDependencies) {
   const provider = 'porngifs.com';
   try {
-    const { address } = await dependencies.lookup('porngifs.com');
+    const { address } = await withShutdownSignal(
+      dependencies.lookup('porngifs.com'),
+      context.signal,
+    );
     let lastError;
     for (let attempt = 0; attempt < 15; attempt += 1) {
       const id = dependencies.randomInteger(1, 39_239);
@@ -34,6 +64,7 @@ export async function fetchPorngifs(_source, context, dependencies = defaultDepe
           maximumBytes: context.maxMediaBytes,
           minimumBytes: 1_025,
           finalUrl: targetUrl,
+          ...(context.signal ? { signal: context.signal } : {}),
         });
         return mediaResult({ provider, id: String(id), url: targetUrl, download });
       } catch (error) {

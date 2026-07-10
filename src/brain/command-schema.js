@@ -27,6 +27,15 @@ export function stringOption({ name, description, required = false, autocomplete
   return option;
 }
 
+export function userOption({ name, description, required = false }) {
+  return {
+    type: ApplicationCommandOptionType.USER,
+    name,
+    description,
+    required,
+  };
+}
+
 export function commandData({ name, description, nsfw = false, options = [] }) {
   return {
     type: 1,

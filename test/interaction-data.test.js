@@ -8,11 +8,26 @@ import {
   modalValue,
   optionValue,
   parseMediaCustomId,
+  resolvedUser,
 } from '../src/discord/interaction-data.js';
 
 test('interaction options are read recursively', () => {
   const interaction = { data: { options: [{ name: 'group', options: [{ name: 'style', value: 'Anime' }] }] } };
   assert.equal(optionValue(interaction, 'style'), 'Anime');
+});
+
+test('resolved user options use Discord resolved data and default to the requester', () => {
+  const author = { id: '123456789012345678', username: 'author' };
+  const target = { id: '234567890123456789', username: 'target' };
+  const interaction = {
+    user: author,
+    data: {
+      options: [{ name: 'user', value: target.id }],
+      resolved: { users: { [target.id]: target } },
+    },
+  };
+  assert.equal(resolvedUser(interaction, 'user'), target);
+  assert.equal(resolvedUser({ user: author, data: { options: [] } }, 'user'), author);
 });
 
 test('focused autocomplete option is found recursively', () => {

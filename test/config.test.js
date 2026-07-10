@@ -15,6 +15,23 @@ test('configuration uses documented secure defaults', () => {
   assert.equal(config.mediaTimeoutMs, 15_000);
   assert.equal(config.maxMediaBytes, 10 * 1024 * 1024);
   assert.equal(config.gatewayIntents, 4_609);
+  assert.deepEqual(config.premiumUserIds, []);
+  assert.equal(config.rateLimitStateFile, '.runtime/rate-limits.json');
+  assert.equal(config.shutdownDrainMs, 5_000);
+  assert.equal(config.shutdownSettleMs, 2_000);
+  assert.equal(config.shutdownHardTimeoutMs, 12_000);
+});
+
+test('premium user allowlist is normalized and validated', () => {
+  const config = loadConfig({
+    ...required,
+    PREMIUM_USER_IDS: '23456789012345678, 34567890123456789,23456789012345678',
+  });
+  assert.deepEqual(config.premiumUserIds, ['23456789012345678', '34567890123456789']);
+  assert.throws(
+    () => loadConfig({ ...required, PREMIUM_USER_IDS: 'not-a-user' }),
+    /only Discord snowflakes/,
+  );
 });
 
 test('guild registration requires a valid testing guild snowflake', () => {

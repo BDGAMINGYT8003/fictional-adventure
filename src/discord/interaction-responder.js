@@ -72,7 +72,13 @@ export class InteractionResponder {
     if (!this.acknowledged) throw new Error('Cannot send a followup before acknowledging the interaction.');
     return this.rest.post(
       `/webhooks/${this.interaction.application_id}/${this.interaction.token}`,
-      { body: data, files, auth: false, query: { wait: true } },
+      {
+        body: data,
+        files,
+        auth: false,
+        query: { wait: true },
+        retryTransient: false,
+      },
     );
   }
 

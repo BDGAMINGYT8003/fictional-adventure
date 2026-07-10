@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DiscordRestClient, DiscordRestError } from '../src/discord/rest-client.js';
+import { DiscordRestClient, DiscordRestError, normalizeRoute } from '../src/discord/rest-client.js';
 import { Logger } from '../src/lib/logger.js';
 
 function client(fetchImpl, overrides = {}) {
@@ -112,4 +112,116 @@ test('non-idempotent requests can disable ambiguous transport and server retries
     (error) => error.status === 502,
   );
   assert.equal(serverCalls, 1);
+});
+
+test('POST requests default to at-most-once behavior after ambiguous failures', async () => {
+  let transportCalls = 0;
+  const transportClient = client(async () => {
+    transportCalls += 1;
+    throw new TypeError('socket closed after write');
+  });
+  await assert.rejects(
+    transportClient.post('/channels/123456789012345678/messages', { body: { content: 'hello' } }),
+    /socket closed/,
+  );
+  assert.equal(transportCalls, 1);
+
+  let serverCalls = 0;
+  const serverClient = client(async () => {
+    serverCalls += 1;
+    return new Response(JSON.stringify({ message: 'temporary failure' }), {
+      status: 503,
+      headers: { 'content-type': 'application/json' },
+    });
+  });
+  await assert.rejects(
+    serverClient.post('/webhooks/123456789012345678/sensitive-token', { body: { content: 'hello' } }),
+    (error) => error.status === 503,
+  );
+  assert.equal(serverCalls, 1);
+});
+
+test('normalized routes and Discord errors never expose interaction or webhook tokens', async () => {
+  const secret = 'sensitive.interaction-token';
+  assert.equal(
+    normalizeRoute('POST', `/interactions/123456789012345678/${secret}/callback`),
+    'POST /interactions/:id/:token/callback',
+  );
+  assert.equal(
+    normalizeRoute('PATCH', `/webhooks/234567890123456789/${secret}/messages/@original`),
+    'PATCH /webhooks/:id/:token/messages/@original',
+  );
+
+  const rest = client(async () => new Response(JSON.stringify({ message: 'bad request', code: 50_035 }), {
+    status: 400,
+    headers: { 'content-type': 'application/json' },
+  }));
+  await assert.rejects(
+    rest.post(`/interactions/123456789012345678/${secret}/callback`, { body: { type: 5 } }),
+    (error) => {
+      assert.equal(error.route, 'POST /interactions/:id/:token/callback');
+      assert.doesNotMatch(error.route, new RegExp(secret.replace('.', '\\.')));
+      return true;
+    },
+  );
+});
+
+test('internal queue and bucket routing keys use token fingerprints only', async () => {
+  let release;
+  const response = new Promise((resolve) => { release = resolve; });
+  const rest = client(async () => response);
+  const secret = 'never-log-this-webhook-token';
+  const request = rest.patch(`/webhooks/234567890123456789/${secret}/messages/@original`, {
+    body: { content: 'hello' },
+  });
+  const routingKeys = [...rest.routeQueues.keys()].join('\n');
+  assert.doesNotMatch(routingKeys, new RegExp(secret));
+  assert.match(routingKeys, /major:webhooks:234567890123456789:[a-f0-9]{16}/);
+  release(new Response(null, { status: 204 }));
+  await request;
+});
+
+test('Discord bucket hashes coordinate rate limits across learned routes', async () => {
+  let clock = 0;
+  let call = 0;
+  const waits = [];
+  const rest = client(async () => {
+    call += 1;
+    const headers = {
+      'content-type': 'application/json',
+      'x-ratelimit-bucket': 'shared-interaction-bucket',
+      'x-ratelimit-remaining': call === 2 ? '0' : '1',
+      'x-ratelimit-reset-after': '0.01',
+    };
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+  }, {
+    now: () => clock,
+    sleep: async (milliseconds) => {
+      waits.push(milliseconds);
+      clock += milliseconds;
+    },
+  });
+  const token = 'same-interaction-token';
+  await rest.patch(`/webhooks/123456789012345678/${token}/messages/@original`, { body: { content: 'one' } });
+  await rest.post(`/webhooks/123456789012345678/${token}`, { body: { content: 'two' } });
+  await rest.patch(`/webhooks/123456789012345678/${token}/messages/@original`, { body: { content: 'three' } });
+  assert.equal(call, 3);
+  assert.ok(waits.some((milliseconds) => milliseconds >= 60));
+});
+
+test('shutdown abort cancels Discord retries and rate-limit waits immediately', async () => {
+  const shutdown = new AbortController();
+  let calls = 0;
+  const rest = client(async () => {
+    calls += 1;
+    return new Response(JSON.stringify({ retry_after: 30, global: false }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    });
+  }, { signal: shutdown.signal });
+  const request = rest.get('/gateway/bot');
+  await new Promise((resolve) => setImmediate(resolve));
+  shutdown.abort(new Error('application shutdown'));
+  await assert.rejects(request, /application shutdown/);
+  assert.equal(calls, 1);
 });

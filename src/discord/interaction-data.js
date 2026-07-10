@@ -70,3 +70,10 @@ export function commandNameForInteraction(interaction) {
 export function requester(interaction) {
   return interactionUser(interaction);
 }
+
+export function resolvedUser(interaction, optionName) {
+  const userId = optionValue(interaction, optionName);
+  if (!userId) return requester(interaction);
+  return interaction.data?.resolved?.users?.[userId]
+    ?? (requester(interaction)?.id === userId ? requester(interaction) : { id: userId });
+}

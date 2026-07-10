@@ -12,6 +12,7 @@ node_modules/
 # Runtime output
 *.log
 logs/
+.runtime/
 coverage/
 dist/
 build/
@@ -64,3 +65,6 @@ core
 core.*
 *.pid
 *.pid.lock
+
+# Local Discord documentation reference (intentionally not versioned)
+llms-full.txt

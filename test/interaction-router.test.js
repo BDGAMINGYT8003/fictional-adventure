@@ -27,8 +27,12 @@ function fixture(commands, overrides = {}) {
     gateway: {},
     config: { maxMediaBytes: 10 * 1024 * 1024 },
     mediaHttp: { withMaximumBytes: () => ({}) },
+    rateLimiter: overrides.rateLimiter,
+    circuitBreaker: overrides.circuitBreaker,
+    shutdownSignal: overrides.shutdownSignal,
     logger: overrides.logger ?? new Logger('error'),
     now: overrides.now,
+    random: overrides.random,
   });
   return { requests, router };
 }
@@ -60,6 +64,74 @@ test('router rejects media commands outside guild NSFW channels before execution
   assert.equal(executed, false);
   assert.equal(requests[0].options.body.type, 4);
   assert.equal(requests[0].options.body.data.flags, 64);
+});
+
+test('cooldown rejection happens before media execution and has no footer', async () => {
+  let executed = false;
+  const rateLimiter = {
+    reserveMedia() { return { allowed: false, releaseAt: 65_000 }; },
+  };
+  const commands = new Map([['media', {
+    kind: 'media',
+    data: { name: 'media', nsfw: true },
+    async execute() { executed = true; },
+  }]]);
+  const { requests, router } = fixture(commands, { rateLimiter, random: () => 0 });
+  await router.handle(interaction(2, { name: 'media' }, { channel: { type: 1 } }));
+  assert.equal(executed, false);
+  const response = requests[0].options.body.data;
+  assert.equal(response.flags, 64);
+  assert.equal(response.embeds[0].title, 'Woah now, slow it down');
+  assert.match(response.embeds[0].description, /<t:65:R>/);
+  assert.match(response.embeds[0].description, /60 requests per 60 seconds/);
+  assert.equal('footer' in response.embeds[0], false);
+});
+
+test('media reservations commit only after displayed success and otherwise roll back', async () => {
+  const events = [];
+  const rateLimiter = {
+    reserveMedia() {
+      const reservation = { id: String(events.length), userId: '345678901234567890' };
+      events.push('reserve');
+      return { allowed: true, reservation };
+    },
+    commit() { events.push('commit'); },
+    rollback() { events.push('rollback'); },
+  };
+  let succeeds = true;
+  const commands = new Map([['media', {
+    kind: 'media',
+    data: { name: 'media', nsfw: true },
+    async execute(context) {
+      await context.responder.defer();
+      return { mediaDisplayed: succeeds };
+    },
+  }]]);
+  const { router } = fixture(commands, { rateLimiter });
+  await router.handle(interaction(2, { name: 'media' }, {
+    id: '123456789012345679',
+    channel: { type: 1 },
+  }));
+  succeeds = false;
+  await router.handle(interaction(2, { name: 'media' }, {
+    id: '123456789012345680',
+    channel: { type: 1 },
+  }));
+  assert.deepEqual(events, ['reserve', 'commit', 'reserve', 'rollback']);
+});
+
+test('router rejects new interactions after shutdown begins', async () => {
+  let executed = false;
+  const commands = new Map([['ping', {
+    data: { name: 'ping', nsfw: false },
+    async execute() { executed = true; },
+  }]]);
+  const { requests, router } = fixture(commands);
+  router.stopAccepting();
+  await router.handle(interaction(2, { name: 'ping' }));
+  assert.equal(executed, false);
+  assert.equal(requests[0].options.body.data.flags, 64);
+  assert.match(requests[0].options.body.data.content, /restarting/);
 });
 
 test('router decodes media component state and executes the target command', async () => {

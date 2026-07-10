@@ -12,17 +12,17 @@ const expectedPublicCommands = [
   '4k', 'anal', 'ass', 'blowjob', 'boobs', 'breeding', 'buttplug', 'cages', 'cum',
   'ecchi', 'ero', 'feet', 'fuck', 'gif', 'gonewild', 'help', 'hentai', 'invite',
   'kitsune', 'legs', 'maid', 'midriff', 'milf', 'neko', 'paizuri', 'petgirls',
-  'ping', 'pussy', 'pussylick', 'selfie', 'smothering', 'socks', 'solo', 'tentacle',
+  'ping', 'premium', 'pussy', 'pussylick', 'selfie', 'smothering', 'socks', 'solo', 'tentacle',
   'thigh', 'threesome', 'uniform', 'waifu', 'yuri',
 ].sort();
 
-test('the rebuilt command registry preserves all 39 public commands', () => {
+test('the rebuilt command registry exposes all legacy commands plus premium', () => {
   const publicNames = [...commands.values()]
     .filter((command) => !command.hidden)
     .map((command) => command.data.name)
     .sort();
   assert.deepEqual(publicNames, expectedPublicCommands);
-  assert.equal(commands.size, 40, 'the registry also contains one hidden component handler');
+  assert.equal(commands.size, 41, 'the registry also contains one hidden component handler');
 });
 
 test('every media command is age-restricted and available in the original contexts', () => {
@@ -37,9 +37,18 @@ test('every media command is age-restricted and available in the original contex
 });
 
 test('utility commands remain safe commands', () => {
-  for (const name of ['help', 'invite', 'ping']) {
+  for (const name of ['help', 'invite', 'ping', 'premium']) {
     assert.equal(commands.get(name).data.nsfw, false, name);
   }
+});
+
+test('premium accepts one optional raw Discord user option', () => {
+  assert.deepEqual(commands.get('premium').data.options, [{
+    type: 6,
+    name: 'user',
+    description: 'User whose plan and remaining quotas you want to view.',
+    required: false,
+  }]);
 });
 
 test('legacy command options and choice values are preserved', () => {

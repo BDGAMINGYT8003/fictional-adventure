@@ -29,6 +29,17 @@ function optionalSnowflake(value, name) {
   return normalized || null;
 }
 
+function snowflakeList(value, name) {
+  const values = String(value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  for (const entry of values) {
+    if (!SNOWFLAKE_PATTERN.test(entry)) throw new Error(`${name} must contain only Discord snowflakes.`);
+  }
+  return Object.freeze([...new Set(values)]);
+}
+
 export function loadConfig(env = process.env, { allowMissing = false } = {}) {
   const botToken = required(env, 'BOT_TOKEN', allowMissing);
   const clientId = required(env, 'CLIENT_ID', allowMissing);
@@ -62,6 +73,11 @@ export function loadConfig(env = process.env, { allowMissing = false } = {}) {
     nekoBotAuthorization: env.NEKOBOT_AUTHORIZATION?.trim() || null,
     waifuPicsEnabled: booleanValue(env.WAIFU_PICS, false),
     allowInsecureMediaTls: booleanValue(env.ALLOW_INSECURE_MEDIA_TLS, false),
+    premiumUserIds: snowflakeList(env.PREMIUM_USER_IDS, 'PREMIUM_USER_IDS'),
+    rateLimitStateFile: env.RATE_LIMIT_STATE_FILE?.trim() || '.runtime/rate-limits.json',
+    shutdownDrainMs: integerValue(env.SHUTDOWN_DRAIN_MS, 5_000, { minimum: 500, maximum: 30_000 }),
+    shutdownSettleMs: integerValue(env.SHUTDOWN_SETTLE_MS, 2_000, { minimum: 250, maximum: 10_000 }),
+    shutdownHardTimeoutMs: integerValue(env.SHUTDOWN_HARD_TIMEOUT_MS, 12_000, { minimum: 2_000, maximum: 60_000 }),
     logLevel,
   });
 }

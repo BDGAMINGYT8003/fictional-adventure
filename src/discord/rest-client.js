@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { API_BASE_URL } from './constants.js';
 import { sleep as defaultSleep } from '../lib/time.js';
 
@@ -15,30 +16,43 @@ export class DiscordRestError extends Error {
   }
 }
 
-function normalizeRoute(method, route) {
-  const pathname = route.split('?')[0];
-  const parts = pathname.split('/').filter(Boolean);
-  const normalized = parts.map((part, index) => {
-    if (!/^\d{17,20}$/.test(part)) return part;
-    const parent = parts[index - 1];
-    if (parent === 'channels' || parent === 'guilds') return part;
-    if (parent === 'webhooks') return part;
-    return ':id';
-  });
-  return `${method.toUpperCase()} /${normalized.join('/')}`;
+function tokenFingerprint(value) {
+  return createHash('sha256').update(String(value)).digest('hex').slice(0, 16);
 }
 
-function majorParameterKey(route) {
-  const parts = route.split('?')[0].split('/').filter(Boolean);
-  for (const resource of ['channels', 'guilds']) {
-    const index = parts.indexOf(resource);
-    if (index !== -1 && parts[index + 1]) return `${resource}:${parts[index + 1]}`;
+function routeMetadata(method, route) {
+  const pathname = route.split('?')[0];
+  const parts = pathname.split('/').filter(Boolean);
+  const tokenIndexes = new Set();
+  let major = 'none';
+
+  if (parts[0] === 'interactions' && parts[2]) {
+    tokenIndexes.add(2);
+    major = `interactions:${tokenFingerprint(parts[2])}`;
+  } else if (parts[0] === 'webhooks' && parts[1]) {
+    if (parts[2]) tokenIndexes.add(2);
+    major = `webhooks:${parts[1]}:${parts[2] ? tokenFingerprint(parts[2]) : 'authenticated'}`;
+  } else {
+    for (const resource of ['channels', 'guilds']) {
+      const index = parts.indexOf(resource);
+      if (index !== -1 && parts[index + 1]) {
+        major = `${resource}:${parts[index + 1]}`;
+        break;
+      }
+    }
   }
-  const webhookIndex = parts.indexOf('webhooks');
-  if (webhookIndex !== -1 && parts[webhookIndex + 1]) {
-    return `webhooks:${parts[webhookIndex + 1]}:${parts[webhookIndex + 2] ?? ''}`;
-  }
-  return 'none';
+
+  const normalized = parts.map((part, index) => {
+    if (tokenIndexes.has(index)) return ':token';
+    if (!/^\d{17,20}$/.test(part)) return part;
+    return ':id';
+  });
+  const template = `${method.toUpperCase()} /${normalized.join('/')}`;
+  return Object.freeze({ template, major });
+}
+
+function normalizeRoute(method, route) {
+  return routeMetadata(method, route).template;
 }
 
 function parseBody(response, text) {
@@ -65,16 +79,17 @@ function makeMultipart(body, files) {
 }
 
 export class DiscordRestClient {
-  constructor({ token, logger, fetchImpl = globalThis.fetch, sleep = defaultSleep, now = Date.now }) {
+  constructor({ token, logger, fetchImpl = globalThis.fetch, sleep = defaultSleep, now = Date.now, signal = null }) {
     if (typeof fetchImpl !== 'function') throw new Error('A Fetch API implementation is required.');
     this.token = token;
     this.logger = logger.child({ subsystem: 'discord-rest' });
     this.fetch = fetchImpl;
     this.sleep = sleep;
     this.now = now;
+    this.signal = signal;
     this.routeQueues = new Map();
     this.routeLimits = new Map();
-    this.routeBuckets = new Map();
+    this.bucketHashes = new Map();
     this.globalResetAt = 0;
   }
 
@@ -86,9 +101,10 @@ export class DiscordRestClient {
 
   async request(method, route, options = {}) {
     if (!route.startsWith('/')) throw new Error(`Discord route must begin with "/": ${route}`);
-    const routeKey = normalizeRoute(method, route);
-    const queueKey = this.routeBuckets.get(routeKey) ?? routeKey;
-    return this.#enqueue(queueKey, () => this.#requestWithRetries(method, route, routeKey, options));
+    const metadata = routeMetadata(method, route);
+    return this.#enqueue(this.#limitKey(metadata), () => (
+      this.#requestWithRetries(method, route, metadata, options)
+    ));
   }
 
   async #enqueue(routeKey, operation) {
@@ -102,63 +118,67 @@ export class DiscordRestClient {
     }
   }
 
-  async #requestWithRetries(method, route, routeKey, options) {
-    const retryTransient = options.retryTransient !== false;
+  async #requestWithRetries(method, route, metadata, options) {
+    const retryTransient = options.retryTransient ?? method.toUpperCase() !== 'POST';
+    const signal = options.signal ?? this.signal;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-      await this.#waitForRateLimit(routeKey);
+      await this.#waitForRateLimit(metadata, signal);
 
       let response;
       try {
         response = await this.#fetch(method, route, options);
       } catch (error) {
-        if (!retryTransient || attempt === MAX_RETRIES) throw error;
+        if (signal?.aborted || !retryTransient || attempt === MAX_RETRIES) throw error;
         const delay = Math.min(1_000 * (2 ** attempt), 10_000);
         this.logger.warn('Discord request failed before receiving a response; retrying.', {
           method,
-          route: routeKey,
+          route: metadata.template,
           attempt: attempt + 1,
           delay,
           error,
         });
-        await this.sleep(delay);
+        await this.#pause(delay, signal);
         continue;
       }
 
       const text = await response.text();
       const payload = parseBody(response, text);
-      this.#captureRateLimit(routeKey, route, response);
+      this.#captureRateLimit(metadata, response);
 
       if (response.status === 429) {
         if (attempt === MAX_RETRIES) {
-          throw this.#errorFromResponse(method, route, response, payload);
+          throw this.#errorFromResponse(method, metadata, response, payload);
         }
-        const retryAfterSeconds = Number(payload?.retry_after ?? response.headers.get('retry-after') ?? 1);
+        const advertisedRetryAfter = Number(payload?.retry_after ?? response.headers.get('retry-after') ?? 1);
+        const retryAfterSeconds = Number.isFinite(advertisedRetryAfter) && advertisedRetryAfter >= 0
+          ? advertisedRetryAfter
+          : 1;
         const retryAfterMs = Math.max(0, Math.ceil(retryAfterSeconds * 1_000)) + 50;
         if (payload?.global || response.headers.get('x-ratelimit-global') === 'true') {
           this.globalResetAt = Math.max(this.globalResetAt, this.now() + retryAfterMs);
         } else {
-          const limitKey = this.routeBuckets.get(routeKey) ?? routeKey;
+          const limitKey = this.#limitKey(metadata);
           this.routeLimits.set(limitKey, this.now() + retryAfterMs);
         }
         this.logger.warn('Discord rate limit encountered; honoring retry_after.', {
-          route: routeKey,
+          route: metadata.template,
           retryAfterMs,
           global: Boolean(payload?.global),
         });
-        await this.sleep(retryAfterMs);
+        await this.#pause(retryAfterMs, signal);
         continue;
       }
 
       if (retryTransient && response.status >= 500 && response.status <= 599 && attempt < MAX_RETRIES) {
         const delay = Math.min(500 * (2 ** attempt), 8_000);
-        await this.sleep(delay);
+        await this.#pause(delay, signal);
         continue;
       }
 
-      if (!response.ok) throw this.#errorFromResponse(method, route, response, payload);
+      if (!response.ok) throw this.#errorFromResponse(method, metadata, response, payload);
       return payload;
     }
-    throw new Error(`Discord request exhausted retries: ${method} ${route}`);
+    throw new Error(`Discord request exhausted retries: ${metadata.template}`);
   }
 
   async #fetch(method, route, options) {
@@ -187,30 +207,56 @@ export class DiscordRestClient {
       method,
       headers,
       body,
-      signal: options.signal,
+      signal: options.signal ?? this.signal,
     });
   }
 
-  #captureRateLimit(routeKey, route, response) {
+  #captureRateLimit(metadata, response) {
     const bucket = response.headers.get('x-ratelimit-bucket');
-    if (bucket) this.routeBuckets.set(routeKey, `bucket:${bucket}:${majorParameterKey(route)}`);
-    const remaining = Number(response.headers.get('x-ratelimit-remaining'));
-    const resetAfter = Number(response.headers.get('x-ratelimit-reset-after'));
-    if (remaining === 0 && Number.isFinite(resetAfter)) {
-      const limitKey = this.routeBuckets.get(routeKey) ?? routeKey;
+    if (bucket) this.bucketHashes.set(metadata.template, bucket);
+    const remainingHeader = response.headers.get('x-ratelimit-remaining');
+    const resetAfterHeader = response.headers.get('x-ratelimit-reset-after');
+    const remaining = Number(remainingHeader);
+    const resetAfter = Number(resetAfterHeader);
+    if (remainingHeader !== null && resetAfterHeader !== null
+      && remaining === 0 && Number.isFinite(resetAfter)) {
+      const limitKey = this.#limitKey(metadata);
       this.routeLimits.set(limitKey, this.now() + Math.ceil(resetAfter * 1_000) + 50);
     }
   }
 
-  async #waitForRateLimit(routeKey) {
-    const limitKey = this.routeBuckets.get(routeKey) ?? routeKey;
+  async #waitForRateLimit(metadata, signal) {
+    const limitKey = this.#limitKey(metadata);
     const resetAt = Math.max(this.globalResetAt, this.routeLimits.get(limitKey) ?? 0);
     const wait = resetAt - this.now();
-    if (wait > 0) await this.sleep(wait);
+    if (wait > 0) await this.#pause(wait, signal);
     if ((this.routeLimits.get(limitKey) ?? 0) <= this.now()) this.routeLimits.delete(limitKey);
   }
 
-  #errorFromResponse(method, route, response, payload) {
+  #limitKey(metadata) {
+    const bucket = this.bucketHashes.get(metadata.template);
+    return bucket
+      ? `bucket:${bucket}:major:${metadata.major}`
+      : `route:${metadata.template}:major:${metadata.major}`;
+  }
+
+  #pause(milliseconds, signal) {
+    if (!signal) return this.sleep(milliseconds);
+    if (signal.aborted) return Promise.reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', abort);
+        resolve();
+      }, milliseconds);
+      const abort = () => {
+        clearTimeout(timer);
+        reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+      };
+      signal.addEventListener('abort', abort, { once: true });
+    });
+  }
+
+  #errorFromResponse(method, metadata, response, payload) {
     const message = typeof payload === 'object' && payload?.message
       ? payload.message
       : `Discord returned HTTP ${response.status}.`;
@@ -219,7 +265,7 @@ export class DiscordRestClient {
       code: typeof payload === 'object' ? payload?.code : undefined,
       details: payload,
       method,
-      route,
+      route: metadata.template,
     });
   }
 }

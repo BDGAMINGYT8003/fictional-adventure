@@ -18,9 +18,12 @@ There is no manual post-deployment registration command.
 ## Discord transport
 
 `src/discord/rest-client.js` owns raw HTTP API v10 requests. It serializes calls
-per normalized route, reads Discord rate-limit headers, honors `retry_after`
-for 429 responses, tracks global limits, retries bounded transient failures,
-and does not send the bot token to interaction webhook routes.
+per normalized route/major resource, learns shared bucket hashes from Discord,
+honors `retry_after` for 429 responses, and tracks global limits. POST requests
+use at-most-once delivery by default; idempotent methods retain bounded
+transient retries. Interaction/webhook tokens are replaced by one-way
+fingerprints in internal keys and redacted templates in logs and errors. The
+bot token is never sent to interaction webhook routes.
 
 `src/discord/gateway-client.js` owns the WebSocket lifecycle. It implements
 Gateway JSON payloads directly: heartbeat and ACK handling, sequence tracking,
@@ -54,6 +57,20 @@ Guild media requests pass both Discord's command-level `nsfw` registration and
 a runtime channel check. Direct-message contexts preserve the original bot's
 behavior.
 
+## Account quotas
+
+`GlobalRateLimiter` keys usage by Discord user ID only, so DMs, group DMs, and
+all guilds share one account quota. Free utility commands have a two-second
+cooldown; Premium utility commands have none. Free media has a rolling
+60-success window plus a 1,000-success UTC-day cap. Premium removes the minute
+limit and has a 5,000-success UTC-day cap.
+
+Media capacity is reserved before any provider request. A reservation commits
+only after the original Discord response is successfully edited with media;
+all provider, parsing, download, and Discord response failures roll it back.
+This provides concurrency safety without charging failed attempts. Successful
+usage is atomically persisted to the ignored `.runtime/` directory.
+
 ## Command brain
 
 Each public command has its own file in `src/commands/`. Media command files
@@ -70,6 +87,12 @@ Each provider has one transport/parser module in `src/brain/providers/`.
 Provider calls use bounded timeouts and download limits. A failed provider is
 logged and the command tries the next source in its own declared pool.
 
+Each provider also has an independent consecutive-failure circuit. It opens
+for a randomized 30–120 seconds after three failures. Once the interval
+elapses, only one genuine user request becomes a half-open probe; concurrent
+requests keep skipping that provider. Success closes the circuit and failure
+reopens it. No timer generates speculative network traffic.
+
 `manifest.js` records endpoint templates and the complete Sex.com niche list.
 `APIs.md` records all active parameters and headers in human-readable form.
 `COMMAND_PARITY.md` records the archived command-to-provider audit.
@@ -83,4 +106,14 @@ artifacts. `.gitattributes` marks source/document formats as text.
 
 `scripts/check.mjs` rejects binary extensions and NUL bytes, checks Git's
 numstat for binary changes, verifies every archived file against the original
-commit, and prevents high-level Discord wrappers from entering active code.
+commit, ensures the local `llms-full.txt` reference is untracked, and prevents
+high-level Discord wrappers from entering active code.
+
+## Shutdown lifecycle
+
+SIGINT, SIGTERM, fatal Gateway state, uncaught exceptions, and unhandled
+rejections enter one idempotent shutdown path. The router first rejects new
+work, active requests receive a drain window, remaining provider I/O is
+cancelled, Discord responses receive a separate settle window, REST and
+Gateway transports close, and quota state flushes. A hard timeout force-closes
+both transports if any task refuses to settle.

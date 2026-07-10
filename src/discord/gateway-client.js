@@ -2,7 +2,6 @@ import { EventEmitter } from 'node:events';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { DEFAULT_GATEWAY_URL, GatewayOpcode } from './constants.js';
-import { sleep } from '../lib/time.js';
 
 const FATAL_CLOSE_CODES = new Set([4004, 4010, 4011, 4012, 4013, 4014]);
 const RESET_SESSION_CLOSE_CODES = new Set([1000, 1001, 4007, 4009]);
@@ -52,6 +51,7 @@ export class DiscordGatewayClient extends EventEmitter {
     this.logger = logger.child({ subsystem: 'discord-gateway' });
     this.WebSocketImpl = WebSocketImpl;
     this.socket = null;
+    this.closingSocket = null;
     this.gatewayBaseUrl = DEFAULT_GATEWAY_URL;
     this.resumeGatewayUrl = null;
     this.sessionId = null;
@@ -59,6 +59,8 @@ export class DiscordGatewayClient extends EventEmitter {
     this.heartbeatTimer = null;
     this.firstHeartbeatTimer = null;
     this.reconnectTimer = null;
+    this.invalidSessionTimer = null;
+    this.invalidSessionWaitResolve = null;
     this.awaitingHeartbeatAck = false;
     this.lastHeartbeatAt = null;
     this.ping = null;
@@ -82,13 +84,37 @@ export class DiscordGatewayClient extends EventEmitter {
     this.#open(false);
   }
 
-  stop() {
+  stop({ force = false, timeoutMs = 1_000 } = {}) {
     this.stopped = true;
     this.#clearTimers();
-    if (this.socket) {
-      this.socket.close(1000, 'Application shutdown');
-      this.socket = null;
+    const socket = this.socket ?? this.closingSocket;
+    this.socket = null;
+    if (!socket) return Promise.resolve();
+    this.closingSocket = socket;
+    if (force) {
+      socket.terminate();
+      if (this.closingSocket === socket) this.closingSocket = null;
+      return Promise.resolve();
     }
+    return new Promise((resolve) => {
+      let timer;
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        socket.removeListener?.('close', finish);
+        if (this.closingSocket === socket) this.closingSocket = null;
+        resolve();
+      };
+      socket.once('close', finish);
+      timer = setTimeout(() => {
+        socket.terminate();
+        finish();
+      }, timeoutMs);
+      if (socket.readyState === this.WebSocketImpl.CLOSED) finish();
+      else socket.close(1000, 'Application shutdown');
+    });
   }
 
   #open(shouldResume) {
@@ -213,7 +239,7 @@ export class DiscordGatewayClient extends EventEmitter {
   async #handleInvalidSession(canResume) {
     this.logger.warn('Discord Gateway session became invalid.', { canResume });
     if (!canResume) this.#resetSession();
-    await sleep(1_000 + Math.floor(Math.random() * 4_000));
+    await this.#waitForInvalidSessionRetry(1_000 + Math.floor(Math.random() * 4_000));
     this.#scheduleReconnect(canResume, 0);
   }
 
@@ -279,5 +305,23 @@ export class DiscordGatewayClient extends EventEmitter {
     this.#clearHeartbeatTimers();
     clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
+    clearTimeout(this.invalidSessionTimer);
+    this.invalidSessionTimer = null;
+    const resolve = this.invalidSessionWaitResolve;
+    this.invalidSessionWaitResolve = null;
+    resolve?.();
+  }
+
+  #waitForInvalidSessionRetry(milliseconds) {
+    clearTimeout(this.invalidSessionTimer);
+    this.invalidSessionWaitResolve?.();
+    return new Promise((resolve) => {
+      this.invalidSessionWaitResolve = resolve;
+      this.invalidSessionTimer = setTimeout(() => {
+        this.invalidSessionTimer = null;
+        this.invalidSessionWaitResolve = null;
+        resolve();
+      }, milliseconds);
+    });
   }
 }

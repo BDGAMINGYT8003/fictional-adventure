@@ -111,3 +111,21 @@ test('JSON format remains available for structured log collectors', () => {
     data: { count: 39 },
   });
 });
+
+test('logger redacts interaction, webhook, authorization, and token secrets', () => {
+  const { lines, output } = captureOutput();
+  const logger = new Logger('info', {}, {
+    clock: fixedClock,
+    colorLevel: 0,
+    output,
+  });
+  const secret = 'a-very-sensitive-interaction-token';
+  logger.error(`POST /interactions/123/${secret}/callback failed`, {
+    route: `/webhooks/456/${secret}/messages/@original`,
+    authorization: `Bot ${secret}`,
+    interactionToken: secret,
+  });
+  const rendered = lines.error.join('\n');
+  assert.doesNotMatch(rendered, new RegExp(secret, 'g'));
+  assert.match(rendered, /\[REDACTED\]/);
+});

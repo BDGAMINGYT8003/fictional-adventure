@@ -58,3 +58,48 @@ test('media HTTP client reports invalid JSON explicitly', async () => {
     (error) => error.code === 'INVALID_RESPONSE',
   );
 });
+
+test('media HTTP client propagates graceful-shutdown cancellation', async () => {
+  const shutdown = new AbortController();
+  const http = new MediaHttpClient({
+    timeoutMs: 1_000,
+    maximumBytes: 1_024,
+    logger: new Logger('error'),
+    signal: shutdown.signal,
+    fetchImpl: async (_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(
+        options.signal.reason ?? new DOMException('Aborted', 'AbortError'),
+      ), { once: true });
+    }),
+  });
+  const request = http.buffer('https://cdn.example/media.gif');
+  shutdown.abort(new Error('application shutdown'));
+  await assert.rejects(request, (error) => error.code === 'ABORTED');
+});
+
+test('media timeout remains active while a response body is being consumed', async () => {
+  let requestSignal;
+  const http = new MediaHttpClient({
+    timeoutMs: 5,
+    maximumBytes: 1_024,
+    logger: new Logger('error'),
+    fetchImpl: async (_url, options) => {
+      requestSignal = options.signal;
+      return {
+        ok: true,
+        status: 200,
+        url: 'https://cdn.example/media.gif',
+        headers: new Headers({ 'content-type': 'image/gif' }),
+        arrayBuffer: async () => new Promise((_resolve, reject) => {
+          const fail = () => reject(requestSignal.reason ?? new DOMException('Aborted', 'AbortError'));
+          if (requestSignal.aborted) fail();
+          else requestSignal.addEventListener('abort', fail, { once: true });
+        }),
+      };
+    },
+  });
+  await assert.rejects(
+    http.buffer('https://cdn.example/media.gif'),
+    (error) => error.code === 'TIMEOUT',
+  );
+});

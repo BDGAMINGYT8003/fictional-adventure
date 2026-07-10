@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const ORIGINAL_COMMIT = '39fe345d362fb860ec2a6968958a65e634af5fa9';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const ignoredDirectories = new Set(['.git', 'node_modules']);
+const ignoredDirectories = new Set(['.git', '.runtime', 'node_modules']);
 const forbiddenBinaryExtensions = new Set([
   '.7z', '.avif', '.class', '.dll', '.dylib', '.exe', '.gif', '.gz', '.jpeg', '.jpg',
   '.mov', '.mp3', '.mp4', '.o', '.obj', '.pdf', '.png', '.pyc', '.pyo', '.rar', '.so',
@@ -51,14 +51,14 @@ const originalFiles = git('ls-tree', '-r', '--name-only', ORIGINAL_COMMIT)
   .split('\n')
   .filter(Boolean);
 for (const file of originalFiles) {
-  if (file === 'llms-full.txt') {
-    assert.deepEqual(fs.readFileSync(path.join(root, file)), git('show', `${ORIGINAL_COMMIT}:${file}`), 'llms-full.txt changed');
-    continue;
-  }
+  if (file === 'llms-full.txt') continue;
   const archivedPath = path.join(root, 'archive', 'legacy', file);
   assert.equal(fs.existsSync(archivedPath), true, `Missing archived legacy file: ${file}`);
   assert.deepEqual(fs.readFileSync(archivedPath), git('show', `${ORIGINAL_COMMIT}:${file}`), `Archive mismatch: ${file}`);
 }
+
+const trackedFiles = new Set(git('ls-files').toString('utf8').trim().split('\n').filter(Boolean));
+assert.equal(trackedFiles.has('llms-full.txt'), false, 'llms-full.txt is a local reference and must not be tracked');
 
 const activeCodeFiles = files.filter((file) =>
   !file.startsWith('archive/') && (file.endsWith('.js') || file.endsWith('.mjs')),

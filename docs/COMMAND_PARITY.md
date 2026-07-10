@@ -49,9 +49,10 @@ compares them with the corresponding modern command declaration.
 | `/yuri` | Purrbot `yuri/gif`, N-SFW `yuri`, NekoBot `hyuri`, Nekos v4 `yuri` |
 
 The remaining archived commands—`/help`, `/invite`, and `/ping`—are utility
-commands and contain no NSFW provider implementation. The modern hidden
-`intro` module handles mention-message components and is intentionally not an
-application command.
+commands and contain no NSFW provider implementation. The modern `/premium`
+utility adds account-plan and quota visibility without changing any media
+mapping. The hidden `intro` module handles mention-message components and is
+intentionally not an application command.
 
 ## Provider transport verification
 

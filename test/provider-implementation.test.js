@@ -178,6 +178,21 @@ test('Porngifs.com retains DNS/SNI routing, headers, ranges, and retry count', a
   assert.equal(attempts, 15);
 });
 
+test('Porngifs.com DNS lookup yields promptly to graceful shutdown', async () => {
+  const shutdown = new AbortController();
+  const providerContext = context({});
+  providerContext.signal = shutdown.signal;
+  let downloadCalls = 0;
+  const request = fetchPorngifs({}, providerContext, {
+    lookup: async () => new Promise(() => {}),
+    randomInteger: () => 1,
+    async requestHttpsBuffer() { downloadCalls += 1; },
+  });
+  shutdown.abort(new Error('application shutdown'));
+  await assert.rejects(request, (error) => error.code === 'ABORTED');
+  assert.equal(downloadCalls, 0);
+});
+
 test('Porngifs.tv retains its AJAX contract and bounded CDN attachment flow', async () => {
   let pageRequest;
   let mediaRequest;

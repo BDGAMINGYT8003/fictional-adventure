@@ -22,6 +22,28 @@ const KIND = Object.freeze({
   error: { label: 'ERROR', symbol: '✖', style: (chalk) => chalk.bold.red },
 });
 
+const REDACTED = '[REDACTED]';
+const SENSITIVE_KEY = /(?:authorization|password|secret|token|api[_-]?key)/i;
+
+function redactString(value) {
+  return String(value)
+    .replace(/(\/interactions\/[^/?\s]+\/)[^/?\s]+/giu, `$1${REDACTED}`)
+    .replace(/(\/webhooks\/[^/?\s]+\/)[^/?\s]+/giu, `$1${REDACTED}`)
+    .replace(/\bBot\s+[^\s,;]+/giu, `Bot ${REDACTED}`);
+}
+
+export function redactSensitive(value, key = '', seen = new WeakSet()) {
+  if (SENSITIVE_KEY.test(key)) return REDACTED;
+  if (typeof value === 'string') return redactString(value);
+  if (value instanceof Error) return serializeError(value);
+  if (!value || typeof value !== 'object') return value;
+  if (seen.has(value)) return '[Circular]';
+  seen.add(value);
+  if (Array.isArray(value)) return value.map((entry) => redactSensitive(entry, '', seen));
+  return Object.fromEntries(Object.entries(value)
+    .map(([childKey, child]) => [childKey, redactSensitive(child, childKey, seen)]));
+}
+
 function hasEnvironmentKey(environment, key) {
   return Object.prototype.hasOwnProperty.call(environment, key);
 }
@@ -64,15 +86,17 @@ function serializeError(error) {
   if (!(error instanceof Error)) return error;
   return {
     name: error.name,
-    message: error.message,
+    message: redactString(error.message),
     code: error.code,
     status: error.status,
-    stack: error.stack,
+    stack: redactString(error.stack),
   };
 }
 
-function jsonReplacer(_key, value) {
+function jsonReplacer(key, value) {
+  if (SENSITIVE_KEY.test(key)) return REDACTED;
   if (value instanceof Error) return serializeError(value);
+  if (typeof value === 'string') return redactString(value);
   if (typeof value === 'bigint') return value.toString();
   return value;
 }
@@ -83,7 +107,7 @@ function prettyTimestamp(value) {
 }
 
 function contextLabel(bindings) {
-  return [bindings.application, bindings.subsystem].filter(Boolean).join('/');
+  return redactString([bindings.application, bindings.subsystem].filter(Boolean).join('/'));
 }
 
 function extraBindings(bindings) {
@@ -91,11 +115,13 @@ function extraBindings(bindings) {
     .filter(([key]) => key !== 'application' && key !== 'subsystem'));
 }
 
-function formatValue(value) {
+function formatValue(value, key = '') {
+  if (SENSITIVE_KEY.test(key)) return REDACTED;
   if (typeof value === 'string') {
-    return /\s|[="']/u.test(value) ? JSON.stringify(value) : value;
+    const safe = redactString(value);
+    return /\s|[="']/u.test(safe) ? JSON.stringify(safe) : safe;
   }
-  return inspect(value, {
+  return inspect(redactSensitive(value), {
     colors: false,
     compact: true,
     breakLength: Number.POSITIVE_INFINITY,
@@ -115,7 +141,8 @@ function splitMetadata(data) {
   const values = {};
   const errors = [];
   for (const [key, value] of Object.entries(data)) {
-    if (value instanceof Error) errors.push({ key, error: value });
+    if (SENSITIVE_KEY.test(key)) values[key] = REDACTED;
+    else if (value instanceof Error) errors.push({ key, error: value });
     else values[key] = value;
   }
   return { values, errors };
@@ -123,7 +150,7 @@ function splitMetadata(data) {
 
 function errorSummary(error) {
   const code = error.code === undefined ? '' : ` ${error.code}`;
-  return `${error.name || 'Error'}${code}: ${error.message || String(error)}`;
+  return redactString(`${error.name || 'Error'}${code}: ${error.message || String(error)}`);
 }
 
 export class Logger {
@@ -176,7 +203,7 @@ export class Logger {
     const { values, errors } = splitMetadata(data);
     const metadata = { ...extraBindings(this.bindings), ...values };
     const metadataText = Object.entries(metadata)
-      .map(([key, value]) => `${chalk.cyan(key)}=${chalk.dim(formatValue(value))}`);
+      .map(([key, value]) => `${chalk.cyan(key)}=${chalk.dim(formatValue(value, key))}`);
     const errorText = errors.map(({ key, error }) => (
       `${chalk.cyan(key)}=${chalk.red(errorSummary(error))}`
     ));
@@ -184,7 +211,7 @@ export class Logger {
       chalk.dim(prettyTimestamp(timestamp)),
       badge,
       context ? chalk.magenta(`[${context}]`) : null,
-      chalk.bold(String(message)),
+      chalk.bold(redactString(message)),
       [...metadataText, ...errorText].join(' '),
     ].filter(Boolean);
     this.#emit(kind, segments.join('  '));
@@ -192,7 +219,7 @@ export class Logger {
     for (const { error } of errors) {
       const stackLines = String(error.stack ?? '').split('\n').slice(1);
       for (const line of stackLines) {
-        if (line.trim()) this.#emit(kind, chalk.dim(`    ↳ ${line.trim()}`));
+        if (line.trim()) this.#emit(kind, chalk.dim(`    ↳ ${redactString(line.trim())}`));
       }
     }
   }

@@ -3,8 +3,9 @@ import {
   InteractionResponder,
   isInteractionUnavailableError,
 } from '../discord/interaction-responder.js';
-import { commandNameForInteraction, parseMediaCustomId } from '../discord/interaction-data.js';
+import { commandNameForInteraction, parseMediaCustomId, requester } from '../discord/interaction-data.js';
 import { isNsfwContext, nsfwErrorPayload } from './nsfw-guard.js';
+import { cooldownPayload } from './rate-limit/cooldown-payload.js';
 
 const INTERACTION_CACHE_TTL_MS = 15 * 60 * 1_000;
 const MAX_CACHED_INTERACTIONS = 10_000;
@@ -29,15 +30,36 @@ function componentTarget(customId, commands) {
 }
 
 export class InteractionRouter {
-  constructor({ commands, rest, gateway, config, mediaHttp, logger, now = Date.now }) {
+  constructor({
+    commands,
+    rest,
+    gateway,
+    config,
+    mediaHttp,
+    rateLimiter = null,
+    circuitBreaker = null,
+    shutdownSignal = null,
+    logger,
+    now = Date.now,
+    random = Math.random,
+  }) {
     this.commands = commands;
     this.rest = rest;
     this.gateway = gateway;
     this.config = config;
     this.mediaHttp = mediaHttp;
+    this.rateLimiter = rateLimiter;
+    this.circuitBreaker = circuitBreaker;
+    this.shutdownSignal = shutdownSignal;
     this.logger = logger.child({ subsystem: 'interaction-router' });
     this.now = now;
+    this.random = random;
     this.seenInteractions = new Map();
+    this.accepting = true;
+  }
+
+  stopAccepting() {
+    this.accepting = false;
   }
 
   async handle(interaction) {
@@ -52,10 +74,23 @@ export class InteractionRouter {
     let commandName = null;
     let state = {};
     let source = null;
+    let reservation = null;
 
     try {
       if (interaction.type === InteractionType.PING) {
         await responder.pong();
+        return;
+      }
+
+      if (!this.accepting) {
+        if (interaction.type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) {
+          await responder.autocomplete([]);
+        } else {
+          await responder.reply({
+            content: 'The bot is restarting and is not accepting new interactions yet. Please try again shortly.',
+            flags: 64,
+          });
+        }
         return;
       }
 
@@ -93,6 +128,22 @@ export class InteractionRouter {
         return;
       }
 
+      if (this.rateLimiter && source !== 'autocomplete') {
+        const userId = requester(interaction)?.id;
+        const mediaRequest = command.kind === 'media' && (source === 'command' || source === 'component');
+        const utilityRequest = command.kind !== 'media' && source === 'command';
+        if (userId && (mediaRequest || utilityRequest)) {
+          const gate = mediaRequest
+            ? this.rateLimiter.reserveMedia(userId)
+            : this.rateLimiter.consumeUtility(userId);
+          if (!gate.allowed) {
+            await responder.reply(cooldownPayload(gate.releaseAt, this.random));
+            return;
+          }
+          reservation = gate.reservation ?? null;
+        }
+      }
+
       const advertisedAttachmentLimit = Number(interaction.attachment_size_limit);
       const maxMediaBytes = Number.isFinite(advertisedAttachmentLimit) && advertisedAttachmentLimit > 0
         ? Math.min(this.config.maxMediaBytes, advertisedAttachmentLimit)
@@ -105,6 +156,9 @@ export class InteractionRouter {
         gateway: this.gateway,
         config: this.config,
         http: this.mediaHttp.withMaximumBytes(maxMediaBytes),
+        circuitBreaker: this.circuitBreaker,
+        rateLimiter: this.rateLimiter,
+        signal: this.shutdownSignal,
         maxMediaBytes,
         commands: this.commands,
         logger: this.logger,
@@ -114,9 +168,18 @@ export class InteractionRouter {
         if (typeof command.autocomplete === 'function') await command.autocomplete(context);
         else await responder.autocomplete([]);
       } else {
-        await command.execute(context, state);
+        const result = await command.execute(context, state);
+        if (reservation) {
+          if (result?.mediaDisplayed) this.rateLimiter.commit(reservation);
+          else this.rateLimiter.rollback(reservation);
+          reservation = null;
+        }
       }
     } catch (error) {
+      if (reservation) {
+        this.rateLimiter?.rollback(reservation);
+        reservation = null;
+      }
       const unavailable = isInteractionUnavailableError(error);
       const log = unavailable ? this.logger.warn.bind(this.logger) : this.logger.error.bind(this.logger);
       log(unavailable

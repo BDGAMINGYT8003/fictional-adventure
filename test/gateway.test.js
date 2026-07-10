@@ -123,7 +123,7 @@ test('gateway client identifies, records READY state, heartbeats, and stops clea
   assert.equal(socket.sent.at(-1).d, 7);
   socket.emit('message', JSON.stringify({ op: 11, d: null }), false);
   assert.ok(client.ping >= 0);
-  client.stop();
+  await client.stop();
   assert.equal(client.stopped, true);
 });
 
@@ -135,5 +135,5 @@ test('fatal Gateway close codes stop the reconnect loop', async () => {
   FakeWebSocket.instances[0].close(4004, 'authentication failed');
   const [error] = await fatal;
   assert.equal(error.code, 4004);
-  client.stop();
+  await client.stop();
 });

@@ -32,7 +32,15 @@ export async function fetchMedia(source, context) {
       provider: source.provider,
     });
   }
-  return fetcher(source, context);
+  const permit = context.circuitBreaker?.acquire(source.provider);
+  try {
+    const result = await fetcher(source, context);
+    if (permit) context.circuitBreaker.success(permit);
+    return result;
+  } catch (error) {
+    if (permit) context.circuitBreaker.failure(permit, error);
+    throw error;
+  }
 }
 
 export const providerNames = Object.freeze(Object.keys(providers));
