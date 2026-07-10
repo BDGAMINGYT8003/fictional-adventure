@@ -1,27 +1,33 @@
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { logError, logInfo } = require('./utils/logger');
-const eventHandler = require('./handler/events');
+import { BotApplication } from './src/application.js';
+import { loadConfig } from './src/config.js';
+import { Logger } from './src/lib/logger.js';
 
-// Initialize Discord Client
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-    ],
-});
+let application;
 
-client.commands = new Collection();
+async function main() {
+  const config = loadConfig();
+  const logger = new Logger(config.logLevel, { application: 'discord-nsfw-bot' });
+  application = new BotApplication({ config, logger });
 
-// Execute the event handler logic to bind events
-logInfo('Initializing handlers...');
-eventHandler(client);
+  process.on('unhandledRejection', (error) => logger.error('Unhandled promise rejection.', error));
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught exception.', error);
+    application?.stop();
+    process.exitCode = 1;
+  });
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => {
+      logger.info('Received shutdown signal.', { signal });
+      application.stop();
+    });
+  }
 
-// Login
-if (!process.env.BOT_TOKEN || !process.env.CLIENT_ID) {
-    logError('Missing BOT_TOKEN or CLIENT_ID environment variables.');
-    process.exit(1);
+  await application.start();
 }
 
-client.login(process.env.BOT_TOKEN).catch(err => {
-    logError(`Login failed: ${err.message}`);
+main().catch((error) => {
+  const logger = new Logger('error', { application: 'discord-nsfw-bot' });
+  logger.error('Bot startup failed.', error);
+  application?.stop();
+  process.exitCode = 1;
 });

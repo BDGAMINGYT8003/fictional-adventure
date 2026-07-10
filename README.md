@@ -1,87 +1,104 @@
 # Discord NSFW Media Bot
 
-This is a lewd, explicitly NSFW Discord bot built on **Discord.js v14**. Its primary purpose is to scrape, fetch, and deliver hardcore pornographic images and animated GIFs directly into your Discord servers and DMs.
-Check out [APIs.md](./APIs.md) for a full list of supported APIs and endpoints.
+A modular, age-restricted Discord media bot implemented directly against the
+Discord HTTP API v10 and Gateway v10. The active runtime does not use
+`discord.js`, Eris, Oceanic, or another comprehensive Discord client wrapper.
+The only runtime dependency is the low-level `ws` WebSocket transport.
 
-## What's New in v1.3
-*   **Integrated Porngifs.tv Scraper:** Implemented a new custom scraper for `porngifs.tv` that directly bypasses their UI to fetch high-quality animated `.webp` and `.gif` payloads. This new high-speed source has been injected directly into the randomized `/gif` command pool, natively leveraging Discord's new animated WebP support to deliver media without external FFmpeg processing.
+The original implementation is preserved byte-for-byte in `archive/legacy/`.
+`llms-full.txt` remains at the repository root as the active Discord API
+reference.
 
----
+## Runtime behavior
 
-## 🔞 Available Slash Commands
+- The main entry point automatically loads and validates every command.
+- It bulk-overwrites the configured application-command scope on every start.
+- It then connects to Gateway v10, identifies, heartbeats, resumes interrupted
+  sessions, and routes raw dispatch events.
+- Media commands acknowledge interactions before Discord's three-second
+  deadline, query their own explicit provider pools, and fall back to the next
+  provider when a source fails.
+- All 36 media commands are registered as age-restricted commands and are also
+  rejected at runtime in guild channels that are not marked NSFW.
+- Direct messages retain the legacy behavior; Discord's own age gate still
+  applies to age-restricted application commands.
 
-The bot comes pre-loaded with a massive directory of specific fetishes, categories, and utility commands:
+## Commands
 
-*   `/4k`
-*   `/anal` *(Includes optional Real/Anime style filter)*
-*   `/ass` *(Includes optional Real/Anime style filter)*
-*   `/blowjob` *(Includes optional Real/Anime style filter)*
-*   `/boobs` *(Includes optional Real/Anime style filter)*
-*   `/breeding`
-*   `/buttplug`
-*   `/cages`
-*   `/cum`
-*   `/ecchi`
-*   `/ero`
-*   `/feet` *(Includes optional Real/Anime style filter)*
-*   `/fuck`
-*   `/gif` *(Randomized hardcore GIFs from massive CDN pools)*
-*   `/gonewild`
-*   `/help` *(Dynamic, searchable directory of all commands)*
-*   `/hentai`
-*   `/invite` *(Generates an OAuth2 link to add the bot)*
-*   `/kitsune`
-*   `/legs`
-*   `/maid`
-*   `/midriff`
-*   `/milf`
-*   `/neko`
-*   `/paizuri`
-*   `/petgirls`
-*   `/ping` *(System diagnostics and latency metrics)*
-*   `/pussy`
-*   `/pussylick`
-*   `/selfie`
-*   `/smothering`
-*   `/socks`
-*   `/solo`
-*   `/tentacle`
-*   `/thigh` *(Includes optional Real/Anime style filter)*
-*   `/threesome`
-*   `/uniform`
-*   `/waifu`
-*   `/yuri`
+Media commands:
 
-*Note: All media commands are strictly restricted to NSFW-marked channels in servers. However, they will work completely unrestricted in Direct Messages (DMs) with the bot.*
+`/4k`, `/anal`, `/ass`, `/blowjob`, `/boobs`, `/breeding`, `/buttplug`,
+`/cages`, `/cum`, `/ecchi`, `/ero`, `/feet`, `/fuck`, `/gif`, `/gonewild`,
+`/hentai`, `/kitsune`, `/legs`, `/maid`, `/midriff`, `/milf`, `/neko`,
+`/paizuri`, `/petgirls`, `/pussy`, `/pussylick`, `/selfie`, `/smothering`,
+`/socks`, `/solo`, `/tentacle`, `/thigh`, `/threesome`, `/uniform`, `/waifu`,
+and `/yuri`.
 
----
+Utility commands:
 
-## 🛠️ Configuration & Setup
+- `/help` provides autocomplete, pagination, command details, and fuzzy modal
+  search.
+- `/invite` generates a least-permission bot installation URL.
+- `/ping` reports Gateway latency, interaction roundtrip, uptime, memory,
+  platform, and guild count.
 
-This bot is designed to be hosted 24/7 on environments like Replit, Heroku, or a VPS. It requires specific environment variables to function correctly.
+The original options are preserved:
 
-### Required Environment Variables (Secrets)
-> **Note:** The use of `.env` files is strictly prohibited by the architecture. You must pass these variables directly into the process environment or via your host's secret manager.
+- `/anal`, `/ass`, `/blowjob`, `/boobs`, `/feet`, and `/thigh`: optional
+  `style` choice (`Anime` or `Real`).
+- `/solo`: optional `gender` choice (`female` or `male`).
+- `/threesome`: optional `type` choice (`fff`, `ffm`, or `mmf`).
+- `/help`: optional autocompleted `command` value.
 
-*   `BOT_TOKEN`: Your Discord Developer Portal Bot Token.
-*   `CLIENT_ID`: The unique Application ID of your bot (Required for the `@mention` intro listener and the `/invite` generator).
-*   `WAIFU_IM_KEY`: The authorization token required to access the `v7` API of `waifu.im` for high-quality anime artwork.
+## Configuration
 
-### Optional Environment Variables
-*   `TESTING_GUILD_ID`: (Optional) Provide a Discord Server ID to register experimental or in-development commands (those marked with `testOnly: true` in their script). If this variable is left blank, experimental commands will be safely ignored, preventing them from polluting the global slash command registry.
+Use Replit Secrets or your host's secret manager. The runtime intentionally
+does not load `.env` files.
 
-### Execution
+Required:
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Start the application:
-   ```bash
-   node index.js
-   ```
+- `BOT_TOKEN`: Discord bot token.
+- `CLIENT_ID`: Discord application ID.
 
----
+Provider credentials:
 
-## 🐛 Bug Reports
-If you encounter any bugs, glitches, or have feature improvements, please submit a **GitHub Issue** detailing the problem or your request.
+- `WAIFU_IM_KEY`: API key used with `Authorization: ApiKey ...` and
+  `Accept-Version: v7`.
+- `NEKOBOT_AUTHORIZATION`: value sent in NekoBot's `Authorization` header.
+
+Optional:
+
+- `COMMAND_REGISTRATION_MODE`: `global` (default), `guild`, or `both`.
+- `TESTING_GUILD_ID`: required when registration mode is `guild` or `both`.
+- `WAIFU_PICS`: set to `true` to enable the preserved Waifu.pics endpoints;
+  default is `false` because that service was disabled in the legacy runtime.
+- `ALLOW_INSECURE_MEDIA_TLS`: default `false`. If explicitly enabled, only the
+  N-SFW media download fallback may bypass certificate validation.
+- `MEDIA_TIMEOUT_MS`: provider timeout; default `15000`.
+- `MAX_MEDIA_BYTES`: local ceiling; default `10485760` (10 MiB). The runtime
+  also respects a lower `attachment_size_limit` sent with an interaction.
+- `LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
+
+## Run on Replit or Node.js
+
+1. Add the required secrets to the environment.
+2. Install the single dependency with `npm install`.
+3. Run `npm start` or press Replit's **Start bot** button.
+
+No separate command-registration script is needed. The startup sequence does
+that automatically before connecting the bot.
+
+## Verification
+
+Run:
+
+```sh
+npm run validate
+```
+
+This performs syntax and text/binary checks, verifies the complete legacy
+archive against its source commit, rejects high-level Discord wrappers in the
+active runtime, and executes the unit and parity test suites.
+
+See [APIs.md](./APIs.md) for the complete provider contract and
+[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the runtime design.
