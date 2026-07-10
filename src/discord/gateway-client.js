@@ -97,7 +97,7 @@ export class DiscordGatewayClient extends EventEmitter {
     const url = gatewayUrl(canResume ? this.resumeGatewayUrl : this.gatewayBaseUrl);
     const socket = new this.WebSocketImpl(url);
     this.socket = socket;
-    this.logger.info('Opening Discord Gateway connection.', { resume: Boolean(canResume) });
+    this.logger.event('Opening Discord Gateway connection.', { resume: Boolean(canResume) });
 
     socket.on('message', (data, isBinary) => {
       if (isBinary) {
@@ -191,7 +191,7 @@ export class DiscordGatewayClient extends EventEmitter {
       this.user = data.user;
       this.guildIds = new Set((data.guilds ?? []).map((guild) => guild.id));
       this.reconnectAttempts = 0;
-      this.logger.info('Discord Gateway session is ready.', {
+      this.logger.success('Discord Gateway session is ready.', {
         user: `${data.user?.username ?? 'unknown'} (${data.user?.id ?? 'unknown'})`,
         guilds: this.guildCount,
         sessionType: data.session_type,
@@ -199,7 +199,7 @@ export class DiscordGatewayClient extends EventEmitter {
       this.emit('ready', data);
     } else if (eventName === 'RESUMED') {
       this.reconnectAttempts = 0;
-      this.logger.info('Discord Gateway session resumed.');
+      this.logger.success('Discord Gateway session resumed.');
       this.emit('resumed', data);
     } else if (eventName === 'GUILD_CREATE') {
       this.guildIds.add(data.id);

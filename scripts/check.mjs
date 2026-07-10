@@ -71,7 +71,11 @@ for (const file of activeCodeFiles) {
 }
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-assert.deepEqual(Object.keys(packageJson.dependencies ?? {}), ['ws'], 'Only the low-level ws runtime dependency is allowed.');
+assert.deepEqual(
+  Object.keys(packageJson.dependencies ?? {}),
+  ['chalk', 'ws'],
+  'Only Chalk styling and the low-level ws transport are allowed as runtime dependencies.',
+);
 
 const binaryDiffLines = git('diff', '--numstat', ORIGINAL_COMMIT, '--')
   .toString('utf8')

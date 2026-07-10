@@ -7,7 +7,10 @@ import { Logger } from '../src/lib/logger.js';
 const silentLogger = {
   child() { return this; },
   debug() {},
+  boot() {},
+  event() {},
   info() {},
+  success() {},
   warn() {},
   error() {},
 };

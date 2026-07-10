@@ -15,6 +15,10 @@ export class MessageRouter {
     const exactMention = new RegExp(`^<@!?${this.gateway.user.id}>$`);
     if (!exactMention.test(message.content?.trim() ?? '')) return;
 
+    this.logger.event('Responding to a direct bot mention.', {
+      channelId: message.channel_id,
+      guildId: message.guild_id ?? 'DM',
+    });
     await replyToMessage(this.rest, message, {
       embeds: [{
         title: `✨ ▸ Welcome to ${this.gateway.user.username}`,

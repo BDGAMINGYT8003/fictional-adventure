@@ -67,12 +67,18 @@ export function defineMediaCommand(specification) {
       let result = null;
       for (const source of shuffle(pool)) {
         try {
-          context.logger.info('Trying media source.', {
+          context.logger.event('Requesting media from provider.', {
             command: specification.name,
             provider: source.provider,
           });
           result = await fetchMedia(source, context);
-          if (result) break;
+          if (result) {
+            context.logger.success('Media provider returned a usable result.', {
+              command: specification.name,
+              provider: result.provider,
+            });
+            break;
+          }
         } catch (error) {
           errors.push(error);
           context.logger.warn('Media source failed; trying the next configured source.', {
@@ -104,7 +110,7 @@ export function defineMediaCommand(specification) {
         color: randomColor(),
         image: { url: imageReference },
         footer: {
-          text: `${displayName(user)} • ${result.provider}`,
+          text: displayName(user),
           icon_url: avatarUrl(user),
         },
         timestamp: new Date().toISOString(),

@@ -28,6 +28,15 @@ IDENTIFY, READY state, RESUME, RECONNECT, INVALID_SESSION, exponential
 reconnect delay, and fatal close-code handling. No compression is requested,
 so binary Gateway payloads are treated as a protocol error.
 
+## Terminal logging
+
+`src/lib/logger.js` provides one shared structured terminal format for every
+subsystem. Chalk assigns distinct portable ANSI styles to boot, event,
+success, informational, warning, error, and debug records. Child loggers retain
+their application/subsystem context, errors keep stack traces, Replit and TTY
+color support is detected automatically, and JSON output remains available
+for external log collectors.
+
 ## Interaction routing
 
 The router handles command, component, autocomplete, and modal interaction

@@ -39,6 +39,13 @@ test('media commands defer before provider work and render URL results', async (
   const edit = response.calls[1];
   assert.equal(edit.method, 'editOriginal');
   assert.equal(edit.body.embeds[0].image.url, 'https://cdn.example/media.gif');
+  assert.deepEqual(edit.body.embeds[0].footer, {
+    text: 'tester',
+    icon_url: 'https://cdn.discordapp.com/embed/avatars/0.png',
+  });
+  assert.ok(!edit.body.embeds[0].footer.text.includes('purrbot.site'));
+  assert.ok(!edit.body.embeds[0].footer.text.includes('•'));
+  assert.ok(!Number.isNaN(Date.parse(edit.body.embeds[0].timestamp)));
   assert.equal(edit.body.components[0].components[0].custom_id, 'm:pussylick');
   assert.deepEqual(edit.body.attachments, []);
   assert.deepEqual(edit.files, []);

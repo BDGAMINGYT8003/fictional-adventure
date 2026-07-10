@@ -88,7 +88,7 @@ export class BotApplication {
     });
 
     await this.gateway.connect();
-    this.logger.info('Bot startup completed; awaiting Discord Gateway READY.', {
+    this.logger.boot('Runtime initialized; awaiting Discord Gateway READY.', {
       commands: [...this.commands.values()].filter((command) => !command.hidden).length,
       registrationMode: this.config.registrationMode,
     });
@@ -98,6 +98,6 @@ export class BotApplication {
     if (this.stopping) return;
     this.stopping = true;
     this.gateway.stop();
-    this.logger.info('Bot stopped.');
+    this.logger.event('Bot stopped.');
   }
 }

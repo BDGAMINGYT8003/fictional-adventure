@@ -81,6 +81,13 @@ export class InteractionRouter {
         else await responder.reply({ content: 'This interaction is no longer available.', flags: 64 });
         return;
       }
+      if (source !== 'autocomplete') {
+        this.logger.event('Routing Discord interaction.', {
+          command: commandName,
+          source,
+          interactionId: interaction.id,
+        });
+      }
       if (source !== 'autocomplete' && command.data.nsfw && !isNsfwContext(interaction)) {
         await responder.reply(nsfwErrorPayload());
         return;

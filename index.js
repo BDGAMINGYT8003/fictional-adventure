@@ -17,11 +17,15 @@ async function main() {
   });
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.once(signal, () => {
-      logger.info('Received shutdown signal.', { signal });
+      logger.event('Received shutdown signal.', { signal });
       application.stop();
     });
   }
 
+  logger.boot('Starting Discord NSFW Media Bot.', {
+    node: process.version,
+    pid: process.pid,
+  });
   await application.start();
 }
 

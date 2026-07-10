@@ -3,7 +3,8 @@
 A modular, age-restricted Discord media bot implemented directly against the
 Discord HTTP API v10 and Gateway v10. The active runtime does not use
 `discord.js`, Eris, Oceanic, or another comprehensive Discord client wrapper.
-The only runtime dependency is the low-level `ws` WebSocket transport.
+Its two focused runtime dependencies are the low-level `ws` WebSocket
+transport and Chalk for portable ANSI terminal styling.
 
 The original implementation is preserved byte-for-byte in `archive/legacy/`.
 `llms-full.txt` remains at the repository root as the active Discord API
@@ -18,6 +19,9 @@ reference.
 - Media commands acknowledge interactions before Discord's three-second
   deadline, query their own explicit provider pools, and fall back to the next
   provider when a source fails.
+- Media footers show only the requesting user's display name and avatar;
+  Discord renders the timestamp beside them, while provider URLs remain in the
+  link buttons.
 - All 36 media commands are registered as age-restricted commands and are also
   rejected at runtime in guild channels that are not marked NSFW.
 - Direct messages retain the legacy behavior; Discord's own age gate still
@@ -78,11 +82,15 @@ Optional:
 - `MAX_MEDIA_BYTES`: local ceiling; default `10485760` (10 MiB). The runtime
   also respects a lower `attachment_size_limit` sent with an interaction.
 - `LOG_LEVEL`: `debug`, `info`, `warn`, or `error`.
+- `LOG_COLORS`: `auto` (default), `always`, or `never`. Auto mode enables ANSI
+  styling in capable terminals and Replit consoles. Standard `FORCE_COLOR` and
+  `NO_COLOR` variables are also honored.
+- `LOG_FORMAT`: `pretty` (default) or `json` for structured log collectors.
 
 ## Run on Replit or Node.js
 
 1. Add the required secrets to the environment.
-2. Install the single dependency with `npm install`.
+2. Install dependencies with `npm install`.
 3. Run `npm start` or press Replit's **Start bot** button.
 
 No separate command-registration script is needed. The startup sequence does
