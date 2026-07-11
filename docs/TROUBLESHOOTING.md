@@ -65,6 +65,31 @@ severe network delay to Discord, or multiple competing processes rather than a
 slow media API. The ownership monitor distinguishes sub-2.5-second rejections
 from genuine deadline misses and only yields after confirmed conflict evidence.
 
+## N-SFW / ABD images and expired Osaka certificate
+
+The ABD API currently returns multiple URLs for the same object. Older runtime
+logic preferred `url_japan`, whose `n-sfw.ap-osaka-1.s3.ink` certificate has
+expired. Browsers can expose a manual bypass, but Discord correctly refuses to
+proxy or embed that URL.
+
+The provider adapter now attempts the canonical `url`, `url_cdn`, and `url_usa`
+mirrors sequentially with normal certificate validation. If they fail, only the
+exact Osaka hostname may use the compatibility downloader. That downloader:
+
+1. Performs an independent certificate hostname check.
+2. Accepts only the `CERT_HAS_EXPIRED` validation result.
+3. Rejects self-signed, untrusted-chain, not-yet-valid, substituted-host, and
+   every other TLS condition.
+4. Enforces the interaction attachment limit, local byte ceiling, timeout,
+   shutdown cancellation, and exact host allowlist.
+5. Uploads the result to Discord as a native attachment and omits the broken
+   provider link button.
+
+This restores rendering without disabling TLS verification globally. The ABD
+operator should still renew the certificate; once renewed, the same path
+accepts the normally authorized connection without any code or configuration
+change.
+
 ## Persistent Replit console history
 
 `npm start` launches the bot through `scripts/start-with-logs.mjs`. It mirrors

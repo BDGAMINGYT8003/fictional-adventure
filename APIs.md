@@ -25,9 +25,10 @@ Method: `GET`. Response field: `link`.
 
 ## 2. N-SFW.COM (ABD)
 
-Method: `GET`. The JSON response is read from `url_japan`, falling back to
-`url_usa`. The media is downloaded for a native Discord attachment when
-possible.
+Method: `GET`. The JSON response is checked sequentially through the verified
+`url`, `url_cdn`, and `url_usa` fields before the legacy `url_japan` mirror.
+Media must be downloaded successfully and is always re-uploaded as a native
+Discord attachment; Discord never renders the upstream URL directly.
 
 Base: `https://api.n-sfw.com/nsfw/{category}`
 
@@ -37,9 +38,14 @@ Retained categories:
 `legs`, `masturbation`, `milf`, `neko`, `paizuri`, `petgirls`, `selfie`,
 `smothering`, `socks`, and `yuri`.
 
-Certificate verification remains enabled by default. The legacy insecure CDN
-fallback is available only when `ALLOW_INSECURE_MEDIA_TLS=true` is explicitly
-set.
+The Osaka mirror currently presents an expired certificate. Its compatibility
+path is restricted to the exact `n-sfw.ap-osaka-1.s3.ink` hostname, performs a
+separate certificate hostname check, and tolerates only Node's
+`CERT_HAS_EXPIRED` authorization result. Self-signed certificates, untrusted
+chains, hostname mismatches, redirects to undeclared hosts, and every other TLS
+error remain blocked. No credentials or Discord tokens are sent to media hosts,
+downloads remain size/time bounded, and the direct source link is omitted from
+ABD responses.
 
 ## 3. Waifu.im v7
 

@@ -59,8 +59,10 @@ and REST rate limits.
 - Original endpoint categories, query parameters, provider headers, style
   groups, and command choice values are covered by executable parity tests.
 - The hard-coded NekoBot value became a secret-manager environment variable.
-- Insecure TLS behavior became an explicit opt-in limited to the legacy N-SFW
-  fallback.
+- N-SFW now prefers verified CDN mirrors. Its exact legacy Osaka hostname may
+  tolerate only `CERT_HAS_EXPIRED` after a separate hostname identity check;
+  all other trust failures remain blocked and no global insecure-TLS switch
+  exists.
 - Media is never persisted to the repository or runtime filesystem.
 - The current 10 MiB Discord default attachment limit is used while honoring a
   lower per-interaction `attachment_size_limit`.

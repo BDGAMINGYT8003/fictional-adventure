@@ -11,7 +11,6 @@ test('configuration uses documented secure defaults', () => {
   const config = loadConfig(required);
   assert.equal(config.registrationMode, 'global');
   assert.equal(config.waifuPicsEnabled, false);
-  assert.equal(config.allowInsecureMediaTls, false);
   assert.equal(config.mediaTimeoutMs, 15_000);
   assert.equal(config.maxMediaBytes, 10 * 1024 * 1024);
   assert.equal(config.gatewayIntents, 4_609);

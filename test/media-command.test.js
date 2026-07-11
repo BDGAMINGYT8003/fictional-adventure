@@ -24,7 +24,7 @@ function context(commandResponder, http, source = 'command') {
       user: { id: '234567890123456789', username: 'tester', discriminator: '0', avatar: null },
     },
     http,
-    config: { allowInsecureMediaTls: false },
+    config: {},
     maxMediaBytes: 10 * 1024 * 1024,
     logger: new Logger('error'),
   };
@@ -58,7 +58,7 @@ test('media refreshes defer message updates and replace native attachments', asy
     async json() {
       return { url_japan: 'https://n-sfw.ap-osaka-1.s3.ink/media.webp' };
     },
-    async buffer() {
+    async expiredCertificateHttpsBuffer() {
       return { buffer: bytes, contentType: 'image/webp' };
     },
   }, 'component'));
@@ -69,4 +69,5 @@ test('media refreshes defer message updates and replace native attachments', asy
   assert.equal(edit.files.length, 1);
   assert.equal(edit.files[0].data, bytes);
   assert.equal(edit.files[0].contentType, 'image/webp');
+  assert.equal(edit.body.components[0].components.length, 1);
 });

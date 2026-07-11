@@ -72,7 +72,6 @@ export function loadConfig(env = process.env, { allowMissing = false } = {}) {
     waifuImKey: env.WAIFU_IM_KEY?.trim() || null,
     nekoBotAuthorization: env.NEKOBOT_AUTHORIZATION?.trim() || null,
     waifuPicsEnabled: booleanValue(env.WAIFU_PICS, false),
-    allowInsecureMediaTls: booleanValue(env.ALLOW_INSECURE_MEDIA_TLS, false),
     premiumUserIds: snowflakeList(env.PREMIUM_USER_IDS, 'PREMIUM_USER_IDS'),
     rateLimitStateFile: env.RATE_LIMIT_STATE_FILE?.trim() || '.runtime/rate-limits.json',
     instanceLockFile: env.INSTANCE_LOCK_FILE?.trim() || '.runtime/bot-instance.lock',

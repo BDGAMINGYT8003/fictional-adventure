@@ -22,6 +22,10 @@ Discord API reference, but it is intentionally ignored and never committed.
 - Media commands acknowledge interactions before Discord's three-second
   deadline, query their own explicit provider pools, and fall back to the next
   provider when a source fails.
+- ABD media is downloaded from its declared CDN mirrors and re-uploaded as a
+  native Discord attachment. The exact expired-certificate Osaka mirror has a
+  hostname-verified, expiry-only compatibility path; it is never embedded or
+  exposed as a direct link.
 - Free accounts receive 60 successful media requests per rolling minute and
   1,000 per UTC day. Premium accounts remove the minute ceiling and receive
   5,000 per UTC day. Failed provider/Discord executions do not consume media
@@ -90,8 +94,6 @@ Optional:
 - `TESTING_GUILD_ID`: required when registration mode is `guild` or `both`.
 - `WAIFU_PICS`: set to `true` to enable the preserved Waifu.pics endpoints;
   default is `false` because that service was disabled in the legacy runtime.
-- `ALLOW_INSECURE_MEDIA_TLS`: default `false`. If explicitly enabled, only the
-  N-SFW media download fallback may bypass certificate validation.
 - `MEDIA_TIMEOUT_MS`: provider timeout; default `15000`.
 - `MAX_MEDIA_BYTES`: local ceiling; default `10485760` (10 MiB). The runtime
   also respects a lower `attachment_size_limit` sent with an interaction.

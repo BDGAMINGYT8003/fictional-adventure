@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MediaHttpClient } from '../src/brain/providers/http.js';
+import { MediaHttpClient, validateTlsSocket } from '../src/brain/providers/http.js';
 import { Logger } from '../src/lib/logger.js';
 
 function client(fetchImpl, maximumBytes = 1024) {
@@ -35,6 +35,64 @@ test('media HTTP client rejects unexpected hosts before fetching', async () => {
     (error) => error.code === 'UNEXPECTED_HOST',
   );
   assert.equal(fetched, false);
+});
+
+test('media HTTP client can require an exact allowlisted hostname', async () => {
+  let fetched = false;
+  const http = client(async () => {
+    fetched = true;
+    return new Response('media');
+  });
+  await assert.rejects(
+    http.buffer('https://child.cdn.example/media.gif', {
+      allowedHosts: ['cdn.example'],
+      allowSubdomains: false,
+    }),
+    (error) => error.code === 'UNEXPECTED_HOST',
+  );
+  assert.equal(fetched, false);
+});
+
+test('expired-certificate compatibility never downgrades to plaintext HTTP', async () => {
+  const http = client(async () => new Response('media'));
+  await assert.rejects(
+    http.expiredCertificateHttpsBuffer('http://media.example/file.png', {
+      allowedHosts: ['media.example'],
+      allowSubdomains: false,
+    }),
+    (error) => error.code === 'INVALID_URL',
+  );
+});
+
+test('expired-certificate policy still requires hostname identity and rejects every other TLS error', () => {
+  const certificate = { subject: { CN: 'media.example' } };
+  const matchingIdentity = () => undefined;
+  assert.doesNotThrow(() => validateTlsSocket({
+    authorized: false,
+    authorizationError: 'CERT_HAS_EXPIRED',
+    getPeerCertificate: () => certificate,
+  }, 'media.example', {
+    allowExpiredCertificate: true,
+    checkIdentity: matchingIdentity,
+  }));
+
+  assert.throws(() => validateTlsSocket({
+    authorized: false,
+    authorizationError: 'DEPTH_ZERO_SELF_SIGNED_CERT',
+    getPeerCertificate: () => certificate,
+  }, 'media.example', {
+    allowExpiredCertificate: true,
+    checkIdentity: matchingIdentity,
+  }), (error) => error.code === 'TLS_CERTIFICATE_ERROR');
+
+  assert.throws(() => validateTlsSocket({
+    authorized: false,
+    authorizationError: 'CERT_HAS_EXPIRED',
+    getPeerCertificate: () => certificate,
+  }, 'wrong.example', {
+    allowExpiredCertificate: true,
+    checkIdentity: () => new Error('hostname mismatch'),
+  }), (error) => error.code === 'TLS_IDENTITY_ERROR');
 });
 
 test('media HTTP client enforces declared and scoped size limits', async () => {

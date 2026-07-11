@@ -119,6 +119,13 @@ elapses, only one genuine user request becomes a half-open probe; concurrent
 requests keep skipping that provider. Success closes the circuit and failure
 reopens it. No timer generates speculative network traffic.
 
+ABD first tries its canonical and declared alternate CDN URLs with ordinary
+TLS verification. Its legacy Osaka mirror is contacted only after those fail.
+That one exact hostname may tolerate `CERT_HAS_EXPIRED`, but the raw TLS socket
+must still pass hostname identity checking and may not report any other trust
+error. Successful bytes are uploaded as a Discord attachment and the unsafe
+upstream URL is not placed in an embed or link button.
+
 `manifest.js` records endpoint templates and the complete Sex.com niche list.
 `APIs.md` records all active parameters and headers in human-readable form.
 `COMMAND_PARITY.md` records the archived command-to-provider audit.

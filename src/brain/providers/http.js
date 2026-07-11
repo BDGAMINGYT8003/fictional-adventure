@@ -1,4 +1,5 @@
 import https from 'node:https';
+import { checkServerIdentity } from 'node:tls';
 import { MediaProviderError } from './errors.js';
 
 function validateUrl(value) {
@@ -9,12 +10,12 @@ function validateUrl(value) {
   return url;
 }
 
-function assertAllowedHost(value, allowedHosts) {
+function assertAllowedHost(value, allowedHosts, allowSubdomains = true) {
   if (!allowedHosts?.length) return;
   const hostname = validateUrl(value).hostname.toLowerCase();
   const allowed = allowedHosts.some((entry) => {
     const normalized = String(entry).toLowerCase().replace(/^\./, '');
-    return hostname === normalized || hostname.endsWith(`.${normalized}`);
+    return hostname === normalized || (allowSubdomains && hostname.endsWith(`.${normalized}`));
   });
   if (!allowed) {
     throw new MediaProviderError(`Provider returned an unexpected media host: ${hostname}`, { code: 'UNEXPECTED_HOST' });
@@ -53,7 +54,10 @@ export class MediaHttpClient {
       json: this.json.bind(this),
       text: this.text.bind(this),
       buffer: (url, options = {}) => this.buffer(url, { ...options, maximumBytes: Math.min(options.maximumBytes ?? bounded, bounded) }),
-      insecureHttpsBuffer: (url, options = {}) => this.insecureHttpsBuffer(url, { ...options, maximumBytes: Math.min(options.maximumBytes ?? bounded, bounded) }),
+      expiredCertificateHttpsBuffer: (url, options = {}) => this.expiredCertificateHttpsBuffer(url, {
+        ...options,
+        maximumBytes: Math.min(options.maximumBytes ?? bounded, bounded),
+      }),
     };
   }
 
@@ -80,16 +84,20 @@ export class MediaHttpClient {
     });
   }
 
-  async insecureHttpsBuffer(url, options = {}) {
+  async expiredCertificateHttpsBuffer(url, options = {}) {
     const parsed = validateUrl(url);
-    assertAllowedHost(parsed, options.allowedHosts);
-    if (parsed.protocol !== 'https:') return this.buffer(parsed, options);
+    assertAllowedHost(parsed, options.allowedHosts, options.allowSubdomains);
+    if (parsed.protocol !== 'https:') {
+      throw new MediaProviderError('Expired-certificate compatibility requires HTTPS.', {
+        code: 'INVALID_URL',
+      });
+    }
     return requestHttpsBuffer({
       hostname: parsed.hostname,
       port: parsed.port || 443,
       path: `${parsed.pathname}${parsed.search}`,
       servername: parsed.hostname,
-      rejectUnauthorized: false,
+      allowExpiredCertificate: true,
       headers: options.headers,
       timeoutMs: options.timeoutMs ?? this.timeoutMs,
       maximumBytes: options.maximumBytes ?? this.maximumBytes,
@@ -101,7 +109,7 @@ export class MediaHttpClient {
 
   async #request(url, options, consume) {
     const parsed = validateUrl(url);
-    assertAllowedHost(parsed, options.allowedHosts);
+    assertAllowedHost(parsed, options.allowedHosts, options.allowSubdomains);
     if (options.query) {
       for (const [key, value] of Object.entries(options.query)) {
         if (value !== undefined && value !== null) parsed.searchParams.set(key, String(value));
@@ -132,7 +140,7 @@ export class MediaHttpClient {
           status: response.status,
         });
       }
-      assertAllowedHost(response.url || parsed, options.allowedHosts);
+      assertAllowedHost(response.url || parsed, options.allowedHosts, options.allowSubdomains);
       return await consume(response);
     } catch (error) {
       if (controller.signal.aborted || error?.name === 'AbortError') {
@@ -150,12 +158,45 @@ export class MediaHttpClient {
   }
 }
 
+function authorizationErrorCode(value) {
+  if (!value) return null;
+  return value.code || String(value);
+}
+
+export function validateTlsSocket(socket, servername, {
+  allowExpiredCertificate = false,
+  checkIdentity = checkServerIdentity,
+} = {}) {
+  if (!allowExpiredCertificate) return;
+  const certificate = socket.getPeerCertificate?.(true);
+  if (!certificate || Object.keys(certificate).length === 0) {
+    throw new MediaProviderError('TLS peer did not provide a certificate.', {
+      code: 'TLS_CERTIFICATE_ERROR',
+    });
+  }
+  const identityError = checkIdentity(servername, certificate);
+  if (identityError) {
+    throw new MediaProviderError('TLS certificate does not match the requested media host.', {
+      code: 'TLS_IDENTITY_ERROR',
+      cause: identityError,
+    });
+  }
+  if (socket.authorized) return;
+  const authorizationError = authorizationErrorCode(socket.authorizationError);
+  if (authorizationError !== 'CERT_HAS_EXPIRED') {
+    throw new MediaProviderError('TLS certificate validation failed for the media host.', {
+      code: 'TLS_CERTIFICATE_ERROR',
+      cause: new Error(authorizationError || 'unknown TLS authorization error'),
+    });
+  }
+}
+
 export function requestHttpsBuffer({
   hostname,
   port = 443,
   path,
   servername,
-  rejectUnauthorized = true,
+  allowExpiredCertificate = false,
   headers = {},
   timeoutMs,
   maximumBytes,
@@ -179,9 +220,24 @@ export function requestHttpsBuffer({
       path,
       method: 'GET',
       servername,
-      rejectUnauthorized,
+      rejectUnauthorized: !allowExpiredCertificate,
+      ...(allowExpiredCertificate ? { agent: false } : {}),
       headers,
     });
+
+    if (allowExpiredCertificate) {
+      request.on('socket', (socket) => {
+        const validate = () => {
+          try {
+            validateTlsSocket(socket, servername || hostname, { allowExpiredCertificate });
+          } catch (error) {
+            request.destroy(error);
+          }
+        };
+        if (socket.connecting) socket.once('secureConnect', validate);
+        else validate();
+      });
+    }
 
     const abort = () => request.destroy(new MediaProviderError(
       'Media request was cancelled during shutdown.',

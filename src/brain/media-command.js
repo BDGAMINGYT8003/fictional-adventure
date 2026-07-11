@@ -121,7 +121,7 @@ export function defineMediaCommand(specification) {
         customId: mediaCustomId(specification.name, refreshState(specification, context.interaction, state)),
         label: uiText(Emoji.ui.refresh, 'Refresh'),
       })];
-      const link = result.watchUrl || result.url;
+      const link = Object.hasOwn(result, 'watchUrl') ? result.watchUrl : result.url;
       if (validLink(link)) {
         buttons.push(button({ label: uiText(Emoji.ui.link, 'Link'), style: ButtonStyle.LINK, url: link }));
       }
