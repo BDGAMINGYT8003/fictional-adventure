@@ -1,4 +1,6 @@
 import { fetchAbd } from './abd.js';
+import { fetchAhottie } from './ahottie.js';
+import { fetchHentaiCosplayXxx } from './hentai-cosplay-xxx.js';
 import { fetchNekoBot } from './nekobot.js';
 import { fetchNekosV4 } from './nekos-v4.js';
 import { fetchOBoobs, fetchOButts } from './obru.js';
@@ -12,6 +14,8 @@ import { MediaProviderError } from './errors.js';
 
 const providers = Object.freeze({
   abd: fetchAbd,
+  ahottie: fetchAhottie,
+  hentaicosplayxxx: fetchHentaiCosplayXxx,
   nekobot: fetchNekoBot,
   nekosv4: fetchNekosV4,
   oboobs: fetchOBoobs,

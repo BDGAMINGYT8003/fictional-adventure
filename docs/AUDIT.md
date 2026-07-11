@@ -56,6 +56,8 @@ and REST rate limits.
 - Every public command was recreated in its own source file.
 - All media commands now carry `nsfw: true`, guild/user installation types, and
   guild/bot-DM/private-channel contexts.
+- The active `/cosplay` extension adds two feed-only scraper transports without
+  modifying the byte-for-byte legacy archive or its parity baseline.
 - Original endpoint categories, query parameters, provider headers, style
   groups, and command choice values are covered by executable parity tests.
 - The hard-coded NekoBot value became a secret-manager environment variable.
@@ -75,7 +77,7 @@ and REST rate limits.
 - no active high-level Discord wrapper import exists;
 - the complete archive matches the original commit byte-for-byte;
 - all active JavaScript parses;
-- all 39 public commands load exactly once;
+- all 41 active public commands load exactly once;
 - every media command has modern age/context metadata;
 - every legacy command option and provider category is retained;
 - raw REST authorization, 429 retry, and error behavior;
@@ -89,9 +91,9 @@ The second verification pass executes every archived media command with
 mocked Discord builders and provider transports. Explicit option groups and
 the archived random source ranges are exercised, and the reachable provider
 calls are compared directly with each modern command declaration. Separate
-provider contract tests cover all 11 transports, including query objects,
-headers, response fields, random ranges, DNS/SNI routing, retry counts, and
-attachment behavior.
+provider contract tests cover all 11 archived transports plus both active
+cosplay feeds, including query objects, headers, response fields, random ranges,
+DNS/SNI routing, retry counts, feed parsing, and attachment behavior.
 
 This pass also hardened interaction handling against duplicate Gateway
 dispatches, ambiguous callback retries, expired tokens, legacy refresh IDs,

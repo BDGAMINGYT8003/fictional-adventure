@@ -203,12 +203,58 @@ Up to 15 pages are tried. `data-webp` values ending in `.webp` or `.gif` are
 collected, one is selected randomly, downloaded within the active attachment
 limit, and uploaded using its real content type.
 
+## 11. Cosplay HTML feeds
+
+The `/cosplay` command uses an ordered provider pool. The primary provider is
+always attempted first; Ahottie is contacted only after a primary failure.
+Neither adapter opens an individual gallery or album page.
+
+### Hentai-cosplay-xxx.com (primary)
+
+Feed template:
+
+`https://hentai-cosplay-xxx.com/search/page/{page}/`
+
+On every command or Refresh execution, the adapter reads the current
+pagination ceiling from the feed's `a.last` link, generates a fresh
+cryptographically random page from the complete `1..maximum` range, and reads
+that feed page. Page 1 is reused when it is the randomly selected page.
+
+Only image/source elements inside `ul#image-list` are considered. The adapter
+never requests the `/image/...` gallery links. It removes `/p={width}/` and
+`/p={width}x{height}/` path wrappers, resolves protocol-relative CDN URLs,
+rejects non-HTTPS and foreign hosts, de-duplicates the resulting raw URLs, and
+selects uniformly from the complete candidate array.
+
+### Ahottie.top (fallback)
+
+Feed template:
+
+`https://ahottie.top/tags/Cosplay?page={page}`
+
+The maximum page is read dynamically from the index pagination on every
+fallback execution. A fresh page is selected across the complete range. Only
+image elements already contained by `/albums/...` links in the index payload
+are parsed; the album URLs themselves are never requested. Direct
+`imagesN.imgbox.com` URLs are accepted, while Imgbox thumbnail URLs are promoted
+from `thumbsN`/`_t` to their `imagesN`/`_o` originals.
+
+Both feeds and media downloads have host allowlists, shutdown-aware timeouts,
+and byte ceilings. The selected image is downloaded once, verified as an image,
+and uploaded as a native Discord attachment so the embed renders immediately.
+The Link button retains the resolved raw media URL. No browser automation,
+prefetching, speculative request, or background crawl is used.
+
 ## Command-to-provider preservation
 
 Every command source is explicit in its own module. The provider parity tests
 cover all of the categories above, including style/gender/type source groups.
 The `/gif` pool remains an equal top-level choice between Sex.com,
 Porngifs.com, NekoBot `pgif`, and Porngifs.tv before fallback is applied.
+
+`/cosplay` is a new active command rather than an archived provider mapping.
+Its primary/fallback order and one-feed extraction contracts are covered by
+dedicated executable tests.
 
 The experimental endpoint studies in `archive/legacy/studies/` are preserved
 as research documents. They were not active command implementations in the old

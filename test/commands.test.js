@@ -10,24 +10,24 @@ const commands = await loadCommands(path.join(root, 'src', 'commands'), new Logg
 
 const expectedPublicCommands = [
   '4k', 'anal', 'ass', 'blowjob', 'boobs', 'breeding', 'buttplug', 'cages', 'cum',
-  'ecchi', 'ero', 'feet', 'fuck', 'gif', 'gonewild', 'help', 'hentai', 'invite',
+  'cosplay', 'ecchi', 'ero', 'feet', 'fuck', 'gif', 'gonewild', 'help', 'hentai', 'invite',
   'kitsune', 'legs', 'maid', 'midriff', 'milf', 'neko', 'paizuri', 'petgirls',
   'ping', 'premium', 'pussy', 'pussylick', 'selfie', 'smothering', 'socks', 'solo', 'tentacle',
   'thigh', 'threesome', 'uniform', 'waifu', 'yuri',
 ].sort();
 
-test('the rebuilt command registry exposes all legacy commands plus premium', () => {
+test('the rebuilt command registry exposes all legacy commands plus active additions', () => {
   const publicNames = [...commands.values()]
     .filter((command) => !command.hidden)
     .map((command) => command.data.name)
     .sort();
   assert.deepEqual(publicNames, expectedPublicCommands);
-  assert.equal(commands.size, 41, 'the registry also contains one hidden component handler');
+  assert.equal(commands.size, 42, 'the registry also contains one hidden component handler');
 });
 
 test('every media command is age-restricted and available in the original contexts', () => {
   const mediaCommands = [...commands.values()].filter((command) => command.kind === 'media');
-  assert.equal(mediaCommands.length, 36);
+  assert.equal(mediaCommands.length, 37);
   for (const command of mediaCommands) {
     assert.equal(command.data.nsfw, true, command.data.name);
     assert.deepEqual(command.data.integration_types, [0, 1], command.data.name);

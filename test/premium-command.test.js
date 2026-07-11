@@ -40,6 +40,7 @@ test('premium command renders the author free plan, usage limits, and paired but
   assert.match(body.embeds[0].description, /Rate Limit: 29 \/ 60 per min/);
   assert.match(body.embeds[0].description, /Daily Cap: 594 \/ 1,000/);
   assert.match(body.embeds[0].description, /5,000 requests per day hard ceiling/);
+  assert.match(body.embeds[0].description, /Access to 37 NSFW commands/);
   assert.equal(body.embeds[0].footer.text, 'Moin');
   assert.equal(body.components[0].components[0].url, SUBSCRIBE_URL);
   assert.equal(body.components[0].components[0].style, 5);

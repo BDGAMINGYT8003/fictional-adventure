@@ -64,9 +64,10 @@ export function defineMediaCommand(specification) {
       else await context.responder.defer();
 
       const pool = sourcePool(specification, context.interaction, state);
+      const sources = specification.orderedSources ? [...pool] : shuffle(pool);
       const errors = [];
       let result = null;
-      for (const source of shuffle(pool)) {
+      for (const source of sources) {
         try {
           context.logger.event('Requesting media from provider.', {
             command: specification.name,

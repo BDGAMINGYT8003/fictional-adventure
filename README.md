@@ -36,7 +36,7 @@ Discord API reference, but it is intentionally ignored and never committed.
 - Media footers show only the requesting user's display name and avatar;
   Discord renders the timestamp beside them. Every successful media response
   includes Refresh and Link buttons.
-- All 36 media commands are registered as age-restricted commands and are also
+- All 37 media commands are registered as age-restricted commands and are also
   rejected at runtime in guild channels that are not marked NSFW.
 - Direct messages retain the legacy behavior; Discord's own age gate still
   applies to age-restricted application commands.
@@ -46,7 +46,7 @@ Discord API reference, but it is intentionally ignored and never committed.
 Media commands:
 
 `/4k`, `/anal`, `/ass`, `/blowjob`, `/boobs`, `/breeding`, `/buttplug`,
-`/cages`, `/cum`, `/ecchi`, `/ero`, `/feet`, `/fuck`, `/gif`, `/gonewild`,
+`/cages`, `/cosplay`, `/cum`, `/ecchi`, `/ero`, `/feet`, `/fuck`, `/gif`, `/gonewild`,
 `/hentai`, `/kitsune`, `/legs`, `/maid`, `/midriff`, `/milf`, `/neko`,
 `/paizuri`, `/petgirls`, `/pussy`, `/pussylick`, `/selfie`, `/smothering`,
 `/socks`, `/solo`, `/tentacle`, `/thigh`, `/threesome`, `/uniform`, `/waifu`,

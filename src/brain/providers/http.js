@@ -52,7 +52,10 @@ export class MediaHttpClient {
     const bounded = Math.min(this.maximumBytes, maximumBytes);
     return {
       json: this.json.bind(this),
-      text: this.text.bind(this),
+      text: (url, options = {}) => this.text(url, {
+        ...options,
+        maximumBytes: Math.min(options.maximumBytes ?? bounded, bounded),
+      }),
       buffer: (url, options = {}) => this.buffer(url, { ...options, maximumBytes: Math.min(options.maximumBytes ?? bounded, bounded) }),
       expiredCertificateHttpsBuffer: (url, options = {}) => this.expiredCertificateHttpsBuffer(url, {
         ...options,
@@ -62,7 +65,17 @@ export class MediaHttpClient {
   }
 
   async text(url, options = {}) {
-    return this.#request(url, options, (response) => response.text());
+    return this.#request(url, options, async (response) => {
+      const maximumBytes = options.maximumBytes ?? this.maximumBytes;
+      assertSize(response, maximumBytes);
+      const text = await response.text();
+      if (Buffer.byteLength(text) > maximumBytes) {
+        throw new MediaProviderError(`Provider response exceeds the ${maximumBytes}-byte limit.`, {
+          code: 'TOO_LARGE',
+        });
+      }
+      return text;
+    });
   }
 
   async buffer(url, options = {}) {

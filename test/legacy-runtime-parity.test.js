@@ -201,9 +201,11 @@ test('every reachable archived media provider call exists in the matching modern
   process.env.WAIFU_PICS = 'true';
   try {
     const mediaCommands = [...modernCommands.values()].filter((command) => command.kind === 'media');
-    assert.equal(mediaCommands.length, 36);
+    assert.equal(mediaCommands.length, 37);
+    const archivedMediaCommands = mediaCommands.filter((command) => legacyModules.has(command.data.name));
+    assert.equal(archivedMediaCommands.length, 36);
 
-    for (const modern of mediaCommands) {
+    for (const modern of archivedMediaCommands) {
       const legacy = legacyModules.get(modern.data.name);
       assert.ok(legacy, `missing archived command ${modern.data.name}`);
       const archivedUnion = [];

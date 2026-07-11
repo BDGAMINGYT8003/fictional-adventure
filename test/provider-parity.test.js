@@ -50,6 +50,7 @@ const expectedCommandSources = {
   breeding: { all: [abd('breeding')] },
   buttplug: { all: [abd('buttplug')] },
   cages: { all: [abd('cages')] },
+  cosplay: { all: ['hentaicosplayxxx', 'ahottie'] },
   cum: { all: [purr('cum/gif')] },
   ecchi: { all: [abd('ecchi'), waifuIm('ecchi')] },
   ero: { all: [waifuIm('ero')] },
@@ -92,6 +93,7 @@ test('each individual command retains its legacy provider mapping', () => {
   assert.deepEqual(actual, expectedCommandSources);
   assert.deepEqual(commands.get('solo').media.randomGroups, ['female', 'male', 'nekosv4']);
   assert.deepEqual(commands.get('threesome').media.randomGroups, ['fff', 'ffm', 'mmf', 'nekosv4']);
+  assert.equal(commands.get('cosplay').media.orderedSources, true);
 });
 
 test('all legacy N-SFW endpoint categories are retained', () => {
@@ -179,4 +181,6 @@ test('provider manifest retains utility endpoints and URL parameters', () => {
   assert.match(ProviderEndpoint.PORNGIFS_TV, /sort_by=post_date&from=\{page\}/);
   assert.equal(ProviderEndpoint.WAIFU_IM, 'https://api.waifu.im/images');
   assert.equal(ProviderEndpoint.SEX_COM_SEARCH, 'https://www.sex.com/portal/api/gifs/search');
+  assert.equal(ProviderEndpoint.HENTAI_COSPLAY_FEED, 'https://hentai-cosplay-xxx.com/search/page/{page}/');
+  assert.equal(ProviderEndpoint.AHOTTIE_COSPLAY_FEED, 'https://ahottie.top/tags/Cosplay?page={page}');
 });

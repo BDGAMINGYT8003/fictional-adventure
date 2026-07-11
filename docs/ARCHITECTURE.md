@@ -113,6 +113,14 @@ Each provider has one transport/parser module in `src/brain/providers/`.
 Provider calls use bounded timeouts and download limits. A failed provider is
 logged and the command tries the next source in its own declared pool.
 
+Provider pools are randomized by default to preserve legacy behavior. Commands
+that declare `orderedSources`, currently `/cosplay`, retain strict primary then
+fallback order. Its adapters dynamically discover the full feed depth, choose
+a fresh random page and feed item without persistent seed or offset state, and
+extract media directly from that feed. They never load gallery or album pages.
+Downloaded image bytes are re-uploaded as native Discord attachments while the
+Link button keeps the validated raw source URL.
+
 Each provider also has an independent consecutive-failure circuit. It opens
 for a randomized 30–120 seconds after three failures. Once the interval
 elapses, only one genuine user request becomes a half-open probe; concurrent

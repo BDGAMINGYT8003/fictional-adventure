@@ -106,6 +106,16 @@ test('media HTTP client enforces declared and scoped size limits', async () => {
   );
 });
 
+test('media HTTP client bounds HTML feed bodies as well as binary downloads', async () => {
+  const http = client(async () => new Response('feed-body-too-large', {
+    status: 200,
+  }), 100);
+  await assert.rejects(
+    http.withMaximumBytes(10).text('https://feed.example/page'),
+    (error) => error.code === 'TOO_LARGE',
+  );
+});
+
 test('media HTTP client reports invalid JSON explicitly', async () => {
   const http = client(async () => new Response('not-json', {
     status: 200,

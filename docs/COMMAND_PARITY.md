@@ -19,6 +19,7 @@ compares them with the corresponding modern command declaration.
 | `/breeding` | N-SFW `breeding` |
 | `/buttplug` | N-SFW `buttplug` |
 | `/cages` | N-SFW `cages` |
+| `/cosplay` | New active command: Hentai-cosplay-xxx.com feed, then Ahottie feed only as fallback |
 | `/cum` | Purrbot `cum/gif` |
 | `/ecchi` | N-SFW `ecchi`, Waifu.im `ecchi` |
 | `/ero` | Waifu.im `ero` |
@@ -54,6 +55,10 @@ utility adds account-plan and quota visibility without changing any media
 mapping. The hidden `intro` module handles mention-message components and is
 intentionally not an application command.
 
+`/cosplay` has no archived counterpart. Its row documents an intentional active
+extension and is excluded from the byte-for-byte legacy execution comparison;
+separate tests enforce its ordered fallback and scraper contracts.
+
 ## Provider transport verification
 
 The tests also exercise the provider layer independently of command mapping:
@@ -65,6 +70,9 @@ The tests also exercise the provider layer independently of command mapping:
 - Oboobs and Obutts random/by-ID paths and media URL templates;
 - N-SFW `url_japan`/exact-Osaka selection and bounded native attachment
   download, with every alternate mirror intentionally ignored;
+- cosplay full-depth pagination discovery, one-feed media extraction, wrapper
+  cleaning, candidate de-duplication, fresh random offsets, ordered fallback,
+  exact host validation, and native attachment rendering;
 - Porngifs.com DNS lookup, direct-IP connection, SNI, Host/Referer/Accept
   headers, ID range, size floor, and 15-attempt limit;
 - Porngifs.tv AJAX parameters, headers, page range, HTML extraction, CDN host
