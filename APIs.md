@@ -25,10 +25,10 @@ Method: `GET`. Response field: `link`.
 
 ## 2. N-SFW.COM (ABD)
 
-Method: `GET`. The JSON response is checked sequentially through the verified
-`url`, `url_cdn`, and `url_usa` fields before the legacy `url_japan` mirror.
-Media must be downloaded successfully and is always re-uploaded as a native
-Discord attachment; Discord never renders the upstream URL directly.
+Method: `GET`. The adapter reads only the `url_japan` response field and ignores
+every other declared mirror. Media must be downloaded successfully from the
+exact Osaka host and is always re-uploaded as a native Discord attachment;
+Discord never renders the upstream URL directly.
 
 Base: `https://api.n-sfw.com/nsfw/{category}`
 
@@ -38,9 +38,8 @@ Retained categories:
 `legs`, `masturbation`, `milf`, `neko`, `paizuri`, `petgirls`, `selfie`,
 `smothering`, `socks`, and `yuri`.
 
-The Osaka mirror currently presents an expired certificate. Its compatibility
-path is restricted to the exact `n-sfw.ap-osaka-1.s3.ink` hostname, performs a
-separate certificate hostname check, and tolerates only Node's
+The Osaka route is restricted to the exact `n-sfw.ap-osaka-1.s3.ink` hostname,
+performs a separate certificate hostname check, and tolerates only Node's
 `CERT_HAS_EXPIRED` authorization result. Self-signed certificates, untrusted
 chains, hostname mismatches, redirects to undeclared hosts, and every other TLS
 error remain blocked. No credentials or Discord tokens are sent to media hosts,

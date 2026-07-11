@@ -62,29 +62,32 @@ test('Purrbot, Waifu.pics, and Nekos v4 retain their archived response contracts
   assert.equal(nekos.url, 'https://cdn.example/nekos.webp');
 });
 
-test('N-SFW prefers its verified canonical CDN and returns only a native attachment', async () => {
+test('N-SFW exclusively downloads url_japan from the exact Osaka host', async () => {
   const endpoint = 'https://api.n-sfw.com/nsfw/anal';
-  const mediaUrl = 'https://cdn.n-sfw.com/media.gif';
+  const osakaUrl = `https://${OSAKA_MEDIA_HOST}/media.gif`;
   const calls = [];
   const result = await fetchAbd({ endpoint }, context({
     async json(url) {
       calls.push({ method: 'json', url });
       return {
-        url: mediaUrl,
+        url: 'https://cdn.n-sfw.com/media.gif',
         url_cdn: 'https://n-sfw.cdn.s3.ink/media.gif',
         url_usa: 'https://n-sfw.us-phoenix-1.s3.ink/media.gif',
-        url_japan: `https://${OSAKA_MEDIA_HOST}/media.gif`,
+        url_japan: osakaUrl,
       };
     },
-    async buffer(url, options) {
-      calls.push({ method: 'buffer', url, options });
+    async buffer() {
+      assert.fail('ABD must not contact non-Osaka mirrors');
+    },
+    async expiredCertificateHttpsBuffer(url, options) {
+      calls.push({ method: 'osaka', url, options });
       return { buffer: Buffer.from('media'), contentType: 'image/gif', finalUrl: url };
     },
   }));
-  assert.equal(calls[0].url, endpoint);
+  assert.deepEqual(calls[0], { method: 'json', url: endpoint });
   assert.deepEqual(calls[1], {
-    method: 'buffer',
-    url: mediaUrl,
+    method: 'osaka',
+    url: osakaUrl,
     options: {
       minimumBytes: 1_024,
       allowedHosts: ABD_MEDIA_HOSTS,
@@ -92,45 +95,27 @@ test('N-SFW prefers its verified canonical CDN and returns only a native attachm
       timeoutMs: 5_000,
     },
   });
-  assert.equal(result.url, mediaUrl);
+  assert.equal(result.url, osakaUrl);
   assert.equal(result.watchUrl, null);
   assert.equal(result.fileName, 'media.gif');
   assert.equal(result.buffer.toString(), 'media');
 });
 
-test('N-SFW falls back sequentially to the exact Osaka host and tolerates only certificate expiry', async () => {
-  const endpoint = 'https://api.n-sfw.com/nsfw/breeding';
-  const canonical = 'https://cdn.n-sfw.com/media.png';
-  const usa = 'https://n-sfw.us-phoenix-1.s3.ink/media.png';
-  const osaka = `https://${OSAKA_MEDIA_HOST}/media.png`;
-  const calls = [];
-  const result = await fetchAbd({ endpoint }, context({
+test('N-SFW requires url_japan even when other mirrors are present', async () => {
+  let downloaded = false;
+  await assert.rejects(fetchAbd({ endpoint: 'https://api.n-sfw.com/nsfw/breeding' }, context({
     async json() {
-      return { url: canonical, url_usa: usa, url_japan: osaka };
+      return {
+        url: 'https://cdn.n-sfw.com/media.png',
+        url_cdn: 'https://n-sfw.cdn.s3.ink/media.png',
+        url_usa: 'https://n-sfw.us-phoenix-1.s3.ink/media.png',
+      };
     },
-    async buffer(url) {
-      calls.push({ method: 'verified', url });
-      throw Object.assign(new Error('mirror unavailable'), { code: 'HTTP_ERROR' });
+    async expiredCertificateHttpsBuffer() {
+      downloaded = true;
     },
-    async expiredCertificateHttpsBuffer(url, options) {
-      calls.push({ method: 'expired-certificate', url, options });
-      return { buffer: Buffer.from('media'), contentType: 'image/png', finalUrl: url };
-    },
-  }));
-
-  assert.deepEqual(calls.map(({ method, url }) => ({ method, url })), [
-    { method: 'verified', url: canonical },
-    { method: 'verified', url: usa },
-    { method: 'expired-certificate', url: osaka },
-  ]);
-  assert.deepEqual(calls[2].options, {
-    minimumBytes: 1_024,
-    allowedHosts: ABD_MEDIA_HOSTS,
-    allowSubdomains: false,
-    timeoutMs: 5_000,
-  });
-  assert.equal(result.fileName, 'media.png');
-  assert.equal(result.watchUrl, null);
+  })), (error) => error.code === 'INVALID_RESPONSE');
+  assert.equal(downloaded, false);
 });
 
 test('N-SFW rejects a substituted Osaka hostname before the expiry compatibility path', async () => {
@@ -149,12 +134,12 @@ test('N-SFW rejects a substituted Osaka hostname before the expiry compatibility
 test('N-SFW never returns an unverified direct URL when every native download fails', async () => {
   await assert.rejects(fetchAbd({ endpoint: 'https://api.n-sfw.com/nsfw/anal' }, context({
     async json() {
-      return { url: 'https://cdn.n-sfw.com/media.png' };
+      return { url_japan: `https://${OSAKA_MEDIA_HOST}/media.png` };
     },
-    async buffer() {
+    async expiredCertificateHttpsBuffer() {
       throw Object.assign(new Error('upstream unavailable'), { code: 'HTTP_ERROR' });
     },
-  })), (error) => error.code === 'HTTP_ERROR');
+  })), (error) => error.code === 'PROVIDER_ERROR');
 });
 
 test('Oboobs and Obutts retain random, by-ID, and media URL templates', async () => {

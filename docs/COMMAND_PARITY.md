@@ -63,8 +63,8 @@ The tests also exercise the provider layer independently of command mapping:
 - the exact Sex.com query object, 31-niche list, browser header, page range,
   WebP-to-GIF conversion, CDN URL, and watch URL;
 - Oboobs and Obutts random/by-ID paths and media URL templates;
-- N-SFW canonical/USA/Japan fallback selection and bounded native attachment
-  download;
+- N-SFW `url_japan`/exact-Osaka selection and bounded native attachment
+  download, with every alternate mirror intentionally ignored;
 - Porngifs.com DNS lookup, direct-IP connection, SNI, Host/Referer/Accept
   headers, ID range, size floor, and 15-attempt limit;
 - Porngifs.tv AJAX parameters, headers, page range, HTML extraction, CDN host

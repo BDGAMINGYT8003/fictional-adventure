@@ -22,10 +22,10 @@ Discord API reference, but it is intentionally ignored and never committed.
 - Media commands acknowledge interactions before Discord's three-second
   deadline, query their own explicit provider pools, and fall back to the next
   provider when a source fails.
-- ABD media is downloaded from its declared CDN mirrors and re-uploaded as a
-  native Discord attachment. The exact expired-certificate Osaka mirror has a
-  hostname-verified, expiry-only compatibility path; it is never embedded or
-  exposed as a direct link.
+- ABD reads only `url_japan`, downloads from the exact Osaka host, and
+  re-uploads the media as a native Discord attachment. Its transport remains
+  hostname-verified and may tolerate certificate expiry only; the upstream URL
+  is never embedded or exposed as a direct link.
 - Free accounts receive 60 successful media requests per rolling minute and
   1,000 per UTC day. Premium accounts remove the minute ceiling and receive
   5,000 per UTC day. Failed provider/Discord executions do not consume media
