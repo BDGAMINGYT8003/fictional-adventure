@@ -78,8 +78,8 @@ downloader that:
    every other TLS condition.
 4. Enforces the interaction attachment limit, local byte ceiling, timeout,
    shutdown cancellation, and exact host allowlist.
-5. Uploads the result to Discord as a native attachment and omits the broken
-   provider link button.
+5. Uploads the result to Discord as a native attachment and gives the adjacent
+   Link button the validated Osaka URL.
 
 This preserves native Discord rendering without disabling TLS verification
 globally. If the certificate is renewed, the same path accepts the normally

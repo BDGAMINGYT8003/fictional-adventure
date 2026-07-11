@@ -96,7 +96,7 @@ test('N-SFW exclusively downloads url_japan from the exact Osaka host', async ()
     },
   });
   assert.equal(result.url, osakaUrl);
-  assert.equal(result.watchUrl, null);
+  assert.equal(result.watchUrl, osakaUrl);
   assert.equal(result.fileName, 'media.gif');
   assert.equal(result.buffer.toString(), 'media');
 });

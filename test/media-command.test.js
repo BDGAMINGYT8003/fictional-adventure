@@ -47,6 +47,11 @@ test('media commands defer before provider work and render URL results', async (
   assert.ok(!edit.body.embeds[0].footer.text.includes('•'));
   assert.ok(!Number.isNaN(Date.parse(edit.body.embeds[0].timestamp)));
   assert.equal(edit.body.components[0].components[0].custom_id, 'm:pussylick');
+  assert.equal(edit.body.components[0].components.length, 2);
+  assert.match(edit.body.components[0].components[0].label, /Refresh/);
+  assert.match(edit.body.components[0].components[1].label, /Link/);
+  assert.equal(edit.body.components[0].components[1].style, 5);
+  assert.equal(edit.body.components[0].components[1].url, 'https://cdn.example/media.gif');
   assert.deepEqual(edit.body.attachments, []);
   assert.deepEqual(edit.files, []);
 });
@@ -69,5 +74,12 @@ test('media refreshes defer message updates and replace native attachments', asy
   assert.equal(edit.files.length, 1);
   assert.equal(edit.files[0].data, bytes);
   assert.equal(edit.files[0].contentType, 'image/webp');
-  assert.equal(edit.body.components[0].components.length, 1);
+  assert.equal(edit.body.components[0].components.length, 2);
+  assert.match(edit.body.components[0].components[0].label, /Refresh/);
+  assert.match(edit.body.components[0].components[1].label, /Link/);
+  assert.equal(edit.body.components[0].components[1].style, 5);
+  assert.equal(
+    edit.body.components[0].components[1].url,
+    'https://n-sfw.ap-osaka-1.s3.ink/media.webp',
+  );
 });

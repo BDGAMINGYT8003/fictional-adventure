@@ -24,8 +24,8 @@ Discord API reference, but it is intentionally ignored and never committed.
   provider when a source fails.
 - ABD reads only `url_japan`, downloads from the exact Osaka host, and
   re-uploads the media as a native Discord attachment. Its transport remains
-  hostname-verified and may tolerate certificate expiry only; the upstream URL
-  is never embedded or exposed as a direct link.
+  hostname-verified and may tolerate certificate expiry only; its Link button
+  opens the validated Osaka media URL directly.
 - Free accounts receive 60 successful media requests per rolling minute and
   1,000 per UTC day. Premium accounts remove the minute ceiling and receive
   5,000 per UTC day. Failed provider/Discord executions do not consume media
@@ -34,8 +34,8 @@ Discord API reference, but it is intentionally ignored and never committed.
   for 30–120 seconds, and allow one subsequent real request as the recovery
   probe. The runtime never races or prefetches redundant provider requests.
 - Media footers show only the requesting user's display name and avatar;
-  Discord renders the timestamp beside them, while provider URLs remain in the
-  link buttons.
+  Discord renders the timestamp beside them. Every successful media response
+  includes Refresh and Link buttons.
 - All 36 media commands are registered as age-restricted commands and are also
   rejected at runtime in guild channels that are not marked NSFW.
 - Direct messages retain the legacy behavior; Discord's own age gate still

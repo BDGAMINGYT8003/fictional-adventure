@@ -124,7 +124,8 @@ the other response mirrors are ignored and there is no mirror fallback loop.
 That one exact hostname may tolerate `CERT_HAS_EXPIRED`, but the raw TLS socket
 must still pass hostname identity checking and may not report any other trust
 error. Successful bytes are uploaded as a Discord attachment and the upstream
-URL is not placed in an embed or link button.
+URL is not placed in the embed; the adjacent Link button opens the validated
+Osaka media URL directly.
 
 `manifest.js` records endpoint templates and the complete Sex.com niche list.
 `APIs.md` records all active parameters and headers in human-readable form.

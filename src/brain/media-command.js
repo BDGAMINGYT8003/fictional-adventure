@@ -72,8 +72,14 @@ export function defineMediaCommand(specification) {
             command: specification.name,
             provider: source.provider,
           });
-          result = await fetchMedia(source, context);
-          if (result) {
+          const candidate = await fetchMedia(source, context);
+          if (candidate && !validLink(candidate.url)) {
+            const error = new TypeError('Media provider returned an invalid media URL.');
+            error.code = 'INVALID_URL';
+            throw error;
+          }
+          if (candidate) {
+            result = candidate;
             context.logger.success('Media provider returned a usable result.', {
               command: specification.name,
               provider: result.provider,
@@ -121,10 +127,8 @@ export function defineMediaCommand(specification) {
         customId: mediaCustomId(specification.name, refreshState(specification, context.interaction, state)),
         label: uiText(Emoji.ui.refresh, 'Refresh'),
       })];
-      const link = Object.hasOwn(result, 'watchUrl') ? result.watchUrl : result.url;
-      if (validLink(link)) {
-        buttons.push(button({ label: uiText(Emoji.ui.link, 'Link'), style: ButtonStyle.LINK, url: link }));
-      }
+      const link = validLink(result.watchUrl) ? result.watchUrl : result.url;
+      buttons.push(button({ label: uiText(Emoji.ui.link, 'Link'), style: ButtonStyle.LINK, url: link }));
 
       const body = {
         embeds: [embed],

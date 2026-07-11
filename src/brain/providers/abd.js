@@ -10,7 +10,7 @@ function nativeResult(url, download) {
   return mediaResult({
     provider: PROVIDER,
     url,
-    watchUrl: null,
+    watchUrl: url,
     download,
   });
 }

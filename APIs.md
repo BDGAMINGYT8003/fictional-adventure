@@ -28,7 +28,7 @@ Method: `GET`. Response field: `link`.
 Method: `GET`. The adapter reads only the `url_japan` response field and ignores
 every other declared mirror. Media must be downloaded successfully from the
 exact Osaka host and is always re-uploaded as a native Discord attachment;
-Discord never renders the upstream URL directly.
+Discord never renders the upstream URL directly inside the embed.
 
 Base: `https://api.n-sfw.com/nsfw/{category}`
 
@@ -43,8 +43,8 @@ performs a separate certificate hostname check, and tolerates only Node's
 `CERT_HAS_EXPIRED` authorization result. Self-signed certificates, untrusted
 chains, hostname mismatches, redirects to undeclared hosts, and every other TLS
 error remain blocked. No credentials or Discord tokens are sent to media hosts,
-downloads remain size/time bounded, and the direct source link is omitted from
-ABD responses.
+downloads remain size/time bounded, and the Link button points to the validated
+Osaka media URL.
 
 ## 3. Waifu.im v7
 
