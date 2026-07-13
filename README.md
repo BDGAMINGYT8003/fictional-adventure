@@ -26,6 +26,10 @@ Discord API reference, but it is intentionally ignored and never committed.
   re-uploads the media as a native Discord attachment. Its transport remains
   hostname-verified and may tolerate certificate expiry only; its Link button
   opens the validated Osaka media URL directly.
+- PornPics supplies the Real `/buttplug` option from its category feed. The
+  adapter selects across the 1,000-item category index, reads only gallery-card
+  thumbnails, promotes `/300/` or `/460/` CDN paths to `/1280/`, and never opens
+  an individual gallery page.
 - Free accounts receive 60 successful media requests per rolling minute and
   1,000 per UTC day. Premium accounts remove the minute ceiling and receive
   5,000 per UTC day. Failed provider/Discord executions do not consume media
@@ -64,10 +68,11 @@ Utility commands:
   button that updates the existing message from the latest usage snapshot.
   Premium membership currently comes from a deployment allowlist.
 
-The original options are preserved:
+Command options:
 
-- `/anal`, `/ass`, `/blowjob`, `/boobs`, `/feet`, and `/thigh`: optional
-  `style` choice (`Anime` or `Real`).
+- `/anal`, `/ass`, `/blowjob`, `/boobs`, `/buttplug`, `/feet`, and `/thigh`:
+  optional `style` choice (`Anime` or `Real`). `/buttplug` adds this grouping to
+  its archived Anime-only behavior.
 - `/solo`: optional `gender` choice (`female` or `male`).
 - `/threesome`: optional `type` choice (`fff`, `ffm`, or `mmf`).
 - `/help`: optional autocompleted `command` value.

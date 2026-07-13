@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import breeding from '../src/commands/breeding.js';
+import buttplug from '../src/commands/buttplug.js';
 import pussylick from '../src/commands/pussylick.js';
 import { Logger } from '../src/lib/logger.js';
 
@@ -82,4 +83,57 @@ test('media refreshes defer message updates and replace native attachments', asy
     edit.body.components[0].components[1].url,
     'https://n-sfw.ap-osaka-1.s3.ink/media.webp',
   );
+});
+
+test('buttplug style selection routes exclusively and persists across Refresh', async () => {
+  const animeResponse = responder();
+  const animeContext = context(animeResponse, {
+    async json(url) {
+      assert.equal(url, 'https://api.n-sfw.com/nsfw/buttplug');
+      return { url_japan: 'https://n-sfw.ap-osaka-1.s3.ink/buttplug.gif' };
+    },
+    async expiredCertificateHttpsBuffer(url) {
+      return { buffer: Buffer.from('anime'), contentType: 'image/gif', finalUrl: url };
+    },
+    async text() {
+      assert.fail('Anime selection must not contact PornPics');
+    },
+  });
+  animeContext.interaction.data.options = [{ name: 'style', value: 'Anime' }];
+  await buttplug.execute(animeContext);
+  const animeEdit = animeResponse.calls.at(-1);
+  assert.equal(animeEdit.body.embeds[0].image.url, 'attachment://media.gif');
+  assert.equal(animeEdit.body.components[0].components[0].custom_id, 'm:buttplug:style=Anime');
+
+  const realResponse = responder();
+  let realRequests = 0;
+  const realContext = context(realResponse, {
+    async json() {
+      assert.fail('Real selection must not contact N-SFW');
+    },
+    async expiredCertificateHttpsBuffer() {
+      assert.fail('Real selection must not download N-SFW media');
+    },
+    async text(_url, options) {
+      realRequests += 1;
+      if (options.query) {
+        return JSON.stringify([{
+          gid: 321,
+          g_url: 'https://www.pornpics.com/galleries/real-gallery/',
+          t_url_460: 'https://cdni.pornpics.com/460/1/2/321/321_cover_hash.jpg',
+        }]);
+      }
+      return Array.from({ length: 20 }, (_value, index) => `
+        <a href="/galleries/real-gallery-${index}/">
+          <img src="https://cdni.pornpics.com/460/1/2/${index}/${index}_cover_hash.jpg">
+        </a>
+      `).join('');
+    },
+  });
+  realContext.interaction.data.options = [{ name: 'style', value: 'Real' }];
+  await buttplug.execute(realContext);
+  const realEdit = realResponse.calls.at(-1);
+  assert.equal(realRequests, 1);
+  assert.match(realEdit.body.embeds[0].image.url, /^https:\/\/cdni\.pornpics\.com\/1280\//);
+  assert.equal(realEdit.body.components[0].components[0].custom_id, 'm:buttplug:style=Real');
 });

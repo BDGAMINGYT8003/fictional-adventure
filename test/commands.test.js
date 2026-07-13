@@ -51,8 +51,8 @@ test('premium accepts one optional raw Discord user option', () => {
   }]);
 });
 
-test('legacy command options and choice values are preserved', () => {
-  for (const name of ['anal', 'ass', 'blowjob', 'boobs', 'feet', 'thigh']) {
+test('style-selecting commands expose the Anime and Real choices', () => {
+  for (const name of ['anal', 'ass', 'blowjob', 'boobs', 'buttplug', 'feet', 'thigh']) {
     const option = commands.get(name).data.options[0];
     assert.equal(option.name, 'style');
     assert.deepEqual(option.choices, [

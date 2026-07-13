@@ -211,6 +211,13 @@ test('every reachable archived media provider call exists in the matching modern
       const archivedUnion = [];
       const modernGroups = modern.media.groups ?? { all: modern.media.sources ?? [] };
 
+      if (modern.data.name === 'buttplug') {
+        const archived = await executeLegacyAcrossRandomRange(legacy, {});
+        const anime = sortedUnique(modernGroups.Anime.map(normalizeModernSource));
+        assert.deepEqual(archived, anime, 'buttplug:Anime');
+        continue;
+      }
+
       for (const scenario of scenarioGroups(modern.data.name)) {
         const archived = await executeLegacyAcrossRandomRange(
           legacy,
