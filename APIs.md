@@ -272,11 +272,19 @@ JSON route is used once instead.
 
 Only HTTPS image URLs on the exact `cdni.pornpics.com` host are accepted.
 `/300/` and `/460/` path prefixes are replaced with `/1280/` while all shard
-segments and the filename remain unchanged. The resulting high-resolution
-cover URL is returned directly as both the embed image and Link target. The bot
-does not fetch the CDN bytes, probe the asset, use a proxy, impersonate a TLS
-fingerprint, or attempt to bypass the CDN's datacenter access policy. Feed
-responses remain host-allowlisted, shutdown-aware, and byte-bounded.
+segments and the filename remain unchanged. The bot then performs exactly one
+bounded download from that exact CDN host with image-oriented request headers.
+The response must meet the minimum-size check, declare a supported `image/*`
+content type, and finish on another valid HTTPS `/1280/` URL on the same exact
+host. The bytes stay in memory and are uploaded to Discord as a native
+attachment; the embed uses `attachment://media.<extension>`, while the Link
+button retains the selected raw `/1280/` URL.
+
+An HTTP 200 block page such as `text/html` is rejected as a provider failure
+instead of being sent to Discord as a blank image. The adapter performs no
+retry loop, proxying, TLS impersonation, speculative probe, or attempt to
+bypass the CDN's datacenter access policy. Feed and media responses remain
+host-allowlisted, shutdown-aware, and byte-bounded.
 
 ## Command-to-provider preservation
 

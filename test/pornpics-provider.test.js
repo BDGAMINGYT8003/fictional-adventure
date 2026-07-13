@@ -41,6 +41,14 @@ function providerContext(http) {
   };
 }
 
+function jpegDownload(url, size = 2_048) {
+  return {
+    buffer: Buffer.alloc(size, 0xff),
+    contentType: 'image/jpeg',
+    finalUrl: url,
+  };
+}
+
 function commandResponder() {
   const calls = [];
   return {
@@ -92,11 +100,12 @@ test('PornPics uses the already-loaded initial feed for offsets below twenty', a
   const requests = [];
   const result = await fetchPornPics({ endpoint: CATEGORY_URL }, providerContext({
     async text(url, options) {
-      requests.push({ url, options });
+      requests.push({ method: 'text', url, options });
       return categoryPage();
     },
-    async buffer() {
-      assert.fail('PornPics cover URLs must be returned directly, not downloaded by the bot');
+    async buffer(url, options) {
+      requests.push({ method: 'buffer', url, options });
+      return jpegDownload(url);
     },
   }), {
     randomInteger(minimum, maximum) {
@@ -105,14 +114,24 @@ test('PornPics uses the already-loaded initial feed for offsets below twenty', a
     },
   });
 
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[0].method, 'text');
   assert.equal(requests[0].url, CATEGORY_URL);
   assert.equal(requests[0].options.maximumBytes, PORNPICS_MAXIMUM_FEED_BYTES);
   assert.deepEqual(requests[0].options.allowedHosts, ['pornpics.com']);
+  assert.equal(requests[1].method, 'buffer');
+  assert.equal(requests[1].url, thumbnail(1280, 7));
+  assert.deepEqual(requests[1].options.allowedHosts, ['cdni.pornpics.com']);
+  assert.equal(requests[1].options.allowSubdomains, false);
+  assert.equal(requests[1].options.minimumBytes, 1_024);
+  assert.equal(requests[1].options.headers.Referer, CATEGORY_URL);
+  assert.match(requests[1].options.headers.Accept, /^image\//);
   assert.equal(result.id, '7');
   assert.equal(result.url, thumbnail(1280, 7));
   assert.equal(result.watchUrl, thumbnail(1280, 7));
-  assert.equal(result.buffer, undefined);
+  assert.equal(result.buffer.length, 2_048);
+  assert.equal(result.contentType, 'image/jpeg');
+  assert.equal(result.fileName, 'media.jpg');
 });
 
 test('PornPics aligns a high random offset to the first JSON item without gallery navigation', async () => {
@@ -125,11 +144,12 @@ test('PornPics aligns a high random offset to the first JSON item without galler
   };
   const result = await fetchPornPics({ endpoint: CATEGORY_URL }, providerContext({
     async text(url, options) {
-      requests.push({ url, options });
+      requests.push({ method: 'text', url, options });
       return url === CATEGORY_URL ? categoryPage() : JSON.stringify([offsetItem]);
     },
-    async buffer() {
-      assert.fail('PornPics must not download CDN media through the bot host');
+    async buffer(url, options) {
+      requests.push({ method: 'buffer', url, options });
+      return jpegDownload(url);
     },
   }), {
     randomInteger(minimum, maximum) {
@@ -141,13 +161,16 @@ test('PornPics aligns a high random offset to the first JSON item without galler
   assert.deepEqual(requests.map(({ url }) => url), [
     CATEGORY_URL,
     `${CATEGORY_URL}?offset=543`,
+    thumbnail(1280, 43),
   ]);
   assert.equal(requests.some(({ url }) => url.includes('/galleries/')), false);
   assert.equal(requests[1].options.maximumBytes, PORNPICS_MAXIMUM_OFFSET_BYTES);
   assert.deepEqual(requests[1].options.allowedHosts, ['pornpics.com']);
+  assert.deepEqual(requests[2].options.allowedHosts, ['cdni.pornpics.com']);
   assert.equal(result.id, offsetItem.mid);
   assert.equal(result.url, thumbnail(1280, 43));
   assert.equal(result.watchUrl, thumbnail(1280, 43));
+  assert.equal(result.fileName, 'media.jpg');
 });
 
 test('PornPics uses the same exact-offset JSON route when an initial thumbnail is absent', async () => {
@@ -158,13 +181,22 @@ test('PornPics uses the same exact-offset JSON route when an initial thumbnail i
       if (url === CATEGORY_URL) return categoryPage({ itemCount: 1 });
       return JSON.stringify([{ gid: 77, t_url_460: thumbnail(460, 77) }]);
     },
+    async buffer(url) {
+      requests.push(url);
+      return jpegDownload(url);
+    },
   }), {
     randomInteger() { return 7; },
   });
 
-  assert.deepEqual(requests, [CATEGORY_URL, `${CATEGORY_URL}?offset=7`]);
+  assert.deepEqual(requests, [
+    CATEGORY_URL,
+    `${CATEGORY_URL}?offset=7`,
+    thumbnail(1280, 77),
+  ]);
   assert.equal(result.id, '77');
   assert.equal(result.url, thumbnail(1280, 77));
+  assert.equal(result.fileName, 'media.jpg');
 });
 
 test('PornPics rejects anti-bot HTML, empty arrays, and foreign cover hosts', async () => {
@@ -186,6 +218,33 @@ test('PornPics rejects anti-bot HTML, empty arrays, and foreign cover hosts', as
   })), (error) => error.code === 'INVALID_URL');
 });
 
+test('PornPics rejects CDN block pages and insecure or foreign media redirects', async () => {
+  const fetchWithDownload = (download) => fetchPornPics(
+    { endpoint: CATEGORY_URL },
+    providerContext({
+      async text() { return categoryPage({ itemCount: 1, pageCount: 1 }); },
+      async buffer(url) { return download(url); },
+    }),
+    { randomInteger() { return 0; } },
+  );
+
+  await assert.rejects(fetchWithDownload((url) => ({
+    buffer: Buffer.from('<html><body>Site Unavailable</body></html>'),
+    contentType: 'text/html',
+    finalUrl: url,
+  })), (error) => error.code === 'INVALID_RESPONSE');
+
+  for (const finalUrl of [
+    'http://cdni.pornpics.com/1280/3/17/1/image.jpg',
+    'https://evil.example/1280/3/17/1/image.jpg',
+  ]) {
+    await assert.rejects(
+      fetchWithDownload(() => ({ ...jpegDownload(finalUrl), finalUrl })),
+      (error) => error.code === 'INVALID_URL',
+    );
+  }
+});
+
 test('/buttplug isolates explicit Real and Anime selections and preserves them in Refresh state', async () => {
   assert.deepEqual(buttplug.data.options[0].choices, [
     { name: 'Anime', value: 'Anime' },
@@ -201,17 +260,22 @@ test('/buttplug isolates explicit Real and Anime selections and preserves them i
   const realResponder = commandResponder();
   await buttplug.execute(commandContext(realResponder, {
     async text() { return categoryPage({ itemCount: 10, pageCount: 1 }); },
+    async buffer(url) { return jpegDownload(url); },
     async json() { assert.fail('Real style must not call the Anime ABD API'); },
   }, { style: 'Real' }));
   const realEdit = realResponder.calls[1];
-  const realUrl = realEdit.body.embeds[0].image.url;
+  const realUrl = realEdit.body.components[0].components[1].url;
+  assert.equal(realEdit.body.embeds[0].image.url, 'attachment://media.jpg');
+  assert.deepEqual(realEdit.body.attachments, [{ id: 0, filename: 'media.jpg' }]);
+  assert.equal(realEdit.files[0].contentType, 'image/jpeg');
+  assert.equal(realEdit.files[0].data.length, 2_048);
   assert.match(realUrl, /^https:\/\/cdni\.pornpics\.com\/1280\//);
   assert.equal(realEdit.body.components[0].components[0].custom_id, 'm:buttplug:style=Real');
-  assert.equal(realEdit.body.components[0].components[1].url, realUrl);
 
   const refreshResponder = commandResponder();
   await buttplug.execute(commandContext(refreshResponder, {
     async text() { return categoryPage({ itemCount: 10, pageCount: 1 }); },
+    async buffer(url) { return jpegDownload(url); },
     async json() { assert.fail('a Real refresh must not call the Anime ABD API'); },
   }, { source: 'component' }), { style: 'Real' });
   assert.equal(refreshResponder.calls[0].method, 'deferUpdate');
@@ -219,6 +283,10 @@ test('/buttplug isolates explicit Real and Anime selections and preserves them i
     refreshResponder.calls[1].body.components[0].components[0].custom_id,
     'm:buttplug:style=Real',
   );
+  assert.equal(refreshResponder.calls[1].body.embeds[0].image.url, 'attachment://media.jpg');
+  assert.equal(refreshResponder.calls[1].body.components[0].components[1].url.startsWith(
+    'https://cdni.pornpics.com/1280/',
+  ), true);
 
   const animeResponder = commandResponder();
   const osakaUrl = 'https://n-sfw.ap-osaka-1.s3.ink/buttplug.webp';

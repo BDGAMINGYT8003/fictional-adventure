@@ -123,11 +123,13 @@ Link button keeps the validated raw source URL.
 
 The `/buttplug` Real adapter is intentionally cover-feed-only. It discovers the
 PornPics item ceiling, chooses one fresh exact offset, and promotes the selected
-main thumbnail's CDN path to `/1280/` without opening a gallery. Because that
-CDN may reject server-side datacenter downloads, the validated exact-host URL
-is given directly to Discord for the embed and Link button; the runtime does
-not add proxying, TLS impersonation, speculative probes, or binary download
-work.
+main thumbnail's CDN path to `/1280/` without opening a gallery. It downloads
+that one exact-host asset into bounded memory, rejects undersized or non-image
+responses and unsafe redirects, and uploads successful bytes as a native
+Discord attachment. The Link button keeps the validated raw `/1280/` URL. If
+the CDN returns a datacenter block page, the adapter fails closed and the
+normal command fallback may continue; the runtime does not add proxying, TLS
+impersonation, speculative probes, or background work.
 
 Each provider also has an independent consecutive-failure circuit. It opens
 for a randomized 30–120 seconds after three failures. Once the interval

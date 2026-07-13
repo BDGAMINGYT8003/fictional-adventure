@@ -96,7 +96,8 @@ calls are compared directly with each modern command declaration. Separate
 provider contract tests cover all 11 archived transports plus both active
 cosplay feeds and the active PornPics cover feed, including query objects,
 headers, response fields, random ranges, DNS/SNI routing, retry counts, feed
-parsing, URL promotion, and attachment/direct-render behavior.
+parsing, URL promotion, native-attachment rendering, and blocked-payload
+rejection behavior.
 
 This pass also hardened interaction handling against duplicate Gateway
 dispatches, ambiguous callback retries, expired tokens, legacy refresh IDs,

@@ -13,6 +13,14 @@ const MAXIMUM_ITEM_COUNT = 1_000_000;
 const MAXIMUM_FEED_BYTES = 2 * 1024 * 1024;
 const MAXIMUM_OFFSET_BYTES = 512 * 1024;
 const IMAGE_PATH = /\.(?:avif|jpe?g|png|webp)$/i;
+const DISCORD_IMAGE_TYPES = new Set([
+  'image/avif',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/x-png',
+]);
 const P_MAX_PATTERN = /\bP_MAX\s*=\s*["']?(\d{1,7})["']?/g;
 const IMAGE_ATTRIBUTE_PATTERN = /\b(?:data-full|data-original|data-lazy-src|data-src|srcset|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
 const COVER_FIELD_PATTERN = /["']?t_url(?:_460)?["']?\s*:\s*(?:"([^"]*)"|'([^']*)')/gi;
@@ -24,6 +32,12 @@ const HTML_HEADERS = Object.freeze({
 
 const JSON_HEADERS = Object.freeze({
   Accept: 'application/json,text/plain;q=0.9,*/*;q=0.1',
+  'User-Agent': HTML_HEADERS['User-Agent'],
+});
+
+const MEDIA_HEADERS = Object.freeze({
+  Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+  Referer: ProviderEndpoint.PORNPICS_BUTTPLUG_FEED,
   'User-Agent': HTML_HEADERS['User-Agent'],
 });
 
@@ -231,11 +245,29 @@ export async function fetchPornPics(source, context, dependencies = defaultDepen
     }
     selected ??= await offsetCover(category, selectedOffset, context);
 
+    const download = await context.http.buffer(selected.url, {
+      headers: MEDIA_HEADERS,
+      allowedHosts: [MEDIA_HOST],
+      allowSubdomains: false,
+      minimumBytes: 1_024,
+    });
+    const contentType = String(download.contentType).toLowerCase();
+    if (!DISCORD_IMAGE_TYPES.has(contentType)) {
+      throw invalidResponse('PornPics CDN returned a non-image media payload.');
+    }
+    const resolvedUrl = highResolutionPornPicsCover(download.finalUrl || selected.url);
+    if (!resolvedUrl) {
+      throw new MediaProviderError('PornPics media redirected to an insecure or invalid URL.', {
+        code: 'INVALID_URL',
+      });
+    }
+
     return mediaResult({
       provider: PROVIDER,
       id: selected.id,
-      url: selected.url,
+      url: resolvedUrl,
       watchUrl: selected.url,
+      download: { ...download, contentType },
     });
   } catch (error) {
     throw providerError(error, PROVIDER);

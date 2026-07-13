@@ -85,6 +85,23 @@ This preserves native Discord rendering without disabling TLS verification
 globally. If the certificate is renewed, the same path accepts the normally
 authorized connection without any code or configuration change.
 
+## PornPics images and CDN block pages
+
+The `/buttplug` Real provider resolves one high-resolution PornPics cover and
+downloads it once into bounded memory. A successful image is uploaded to
+Discord as a native attachment, so Discord never needs to fetch the PornPics
+CDN URL to render the embed. The adjacent Link button still opens the original
+validated `/1280/` asset.
+
+This only succeeds when the bot host itself receives the image bytes. Some
+datacenter networks receive a small HTTP 200 `text/html` “Site Unavailable”
+page from `cdni.pornpics.com` even though a residential browser can open the
+same URL. The adapter rejects that page and unsafe redirects rather than
+uploading invalid data. It does not use proxy pools or transport-identity
+bypasses. If logs report a PornPics non-image payload, the hosting network is
+still denied by the upstream CDN; use the Anime source or a host the provider
+permits until its access policy changes.
+
 ## Persistent Replit console history
 
 `npm start` launches the bot through `scripts/start-with-logs.mjs`. It mirrors
