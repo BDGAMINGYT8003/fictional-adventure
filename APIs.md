@@ -245,6 +245,39 @@ and uploaded as a native Discord attachment so the embed renders immediately.
 The Link button retains the resolved raw media URL. No browser automation,
 prefetching, speculative request, or background crawl is used.
 
+## 12. PornPics.com butt-plug cover feed
+
+The `/buttplug` command now exposes the same optional `style` choice as
+`/ass` and `/anal`. `Anime` selects only the retained N-SFW `buttplug`
+endpoint. `Real` selects only PornPics. With no selection, the shared command
+brain flattens and shuffles the two one-source groups, giving each source one
+equal first choice and preserving the established fallback behavior.
+
+Discovery endpoint:
+
+`https://www.pornpics.com/butt-plug/`
+
+The adapter reads `P_MAX` from the initial HTML and treats it as ten gallery
+items per rotator page. A fresh cryptographically random item offset is chosen
+from `0..(P_MAX * 10 - 1)` on every command or Refresh execution. For offsets
+below 20, the already-loaded main feed supplies the corresponding gallery
+thumbnail. Higher offsets use one bounded request to:
+
+`https://www.pornpics.com/butt-plug/?offset={offset}`
+
+The first JSON item at that exact offset supplies `t_url_460`, with `t_url` as
+the secondary field. The adapter never requests `g_url` or any individual
+gallery page. If an expected initial thumbnail is absent, the same exact-offset
+JSON route is used once instead.
+
+Only HTTPS image URLs on the exact `cdni.pornpics.com` host are accepted.
+`/300/` and `/460/` path prefixes are replaced with `/1280/` while all shard
+segments and the filename remain unchanged. The resulting high-resolution
+cover URL is returned directly as both the embed image and Link target. The bot
+does not fetch the CDN bytes, probe the asset, use a proxy, impersonate a TLS
+fingerprint, or attempt to bypass the CDN's datacenter access policy. Feed
+responses remain host-allowlisted, shutdown-aware, and byte-bounded.
+
 ## Command-to-provider preservation
 
 Every command source is explicit in its own module. The provider parity tests
@@ -253,8 +286,10 @@ The `/gif` pool remains an equal top-level choice between Sex.com,
 Porngifs.com, NekoBot `pgif`, and Porngifs.tv before fallback is applied.
 
 `/cosplay` is a new active command rather than an archived provider mapping.
-Its primary/fallback order and one-feed extraction contracts are covered by
-dedicated executable tests.
+The PornPics `Real` group is an intentional extension to the archived
+`/buttplug` command; its original N-SFW source remains unchanged in the
+`Anime` group. Both extensions have dedicated executable transport and command
+tests.
 
 The experimental endpoint studies in `archive/legacy/studies/` are preserved
 as research documents. They were not active command implementations in the old

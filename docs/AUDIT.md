@@ -58,6 +58,8 @@ and REST rate limits.
   guild/bot-DM/private-channel contexts.
 - The active `/cosplay` extension adds two feed-only scraper transports without
   modifying the byte-for-byte legacy archive or its parity baseline.
+- The active `/buttplug` Real group adds one PornPics cover-feed transport;
+  parity still requires the archived N-SFW call in its Anime group.
 - Original endpoint categories, query parameters, provider headers, style
   groups, and command choice values are covered by executable parity tests.
 - The hard-coded NekoBot value became a secret-manager environment variable.
@@ -92,8 +94,9 @@ mocked Discord builders and provider transports. Explicit option groups and
 the archived random source ranges are exercised, and the reachable provider
 calls are compared directly with each modern command declaration. Separate
 provider contract tests cover all 11 archived transports plus both active
-cosplay feeds, including query objects, headers, response fields, random ranges,
-DNS/SNI routing, retry counts, feed parsing, and attachment behavior.
+cosplay feeds and the active PornPics cover feed, including query objects,
+headers, response fields, random ranges, DNS/SNI routing, retry counts, feed
+parsing, URL promotion, and attachment/direct-render behavior.
 
 This pass also hardened interaction handling against duplicate Gateway
 dispatches, ambiguous callback retries, expired tokens, legacy refresh IDs,

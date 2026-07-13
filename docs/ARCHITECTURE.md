@@ -121,6 +121,14 @@ extract media directly from that feed. They never load gallery or album pages.
 Downloaded image bytes are re-uploaded as native Discord attachments while the
 Link button keeps the validated raw source URL.
 
+The `/buttplug` Real adapter is intentionally cover-feed-only. It discovers the
+PornPics item ceiling, chooses one fresh exact offset, and promotes the selected
+main thumbnail's CDN path to `/1280/` without opening a gallery. Because that
+CDN may reject server-side datacenter downloads, the validated exact-host URL
+is given directly to Discord for the embed and Link button; the runtime does
+not add proxying, TLS impersonation, speculative probes, or binary download
+work.
+
 Each provider also has an independent consecutive-failure circuit. It opens
 for a randomized 30–120 seconds after three failures. Once the interval
 elapses, only one genuine user request becomes a half-open probe; concurrent

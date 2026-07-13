@@ -17,7 +17,7 @@ compares them with the corresponding modern command declaration.
 | `/blowjob` | Anime: Purrbot `blowjob/gif`, Waifu.pics `blowjob`, N-SFW `blowjob`, Waifu.im `oral`; Real: NekoBot `blowjob` |
 | `/boobs` | Anime: Waifu.im `oppai`, NekoBot `hboobs`; Real: Oboobs, NekoBot `boobs` |
 | `/breeding` | N-SFW `breeding` |
-| `/buttplug` | N-SFW `buttplug` |
+| `/buttplug` | Anime: retained N-SFW `buttplug`; Real: active PornPics butt-plug cover-feed extension |
 | `/cages` | N-SFW `cages` |
 | `/cosplay` | New active command: Hentai-cosplay-xxx.com feed, then Ahottie feed only as fallback |
 | `/cum` | Purrbot `cum/gif` |
@@ -56,8 +56,10 @@ mapping. The hidden `intro` module handles mention-message components and is
 intentionally not an application command.
 
 `/cosplay` has no archived counterpart. Its row documents an intentional active
-extension and is excluded from the byte-for-byte legacy execution comparison;
-separate tests enforce its ordered fallback and scraper contracts.
+extension and is excluded from the byte-for-byte legacy execution comparison.
+For `/buttplug`, the parity harness compares the archived N-SFW call with the
+modern `Anime` group and separately requires the exact PornPics declaration in
+the new `Real` group. Dedicated tests enforce both scraper contracts.
 
 ## Provider transport verification
 
@@ -73,6 +75,9 @@ The tests also exercise the provider layer independently of command mapping:
 - cosplay full-depth pagination discovery, one-feed media extraction, wrapper
   cleaning, candidate de-duplication, fresh random offsets, ordered fallback,
   exact host validation, and native attachment rendering;
+- PornPics `P_MAX` item-range discovery, exact random offsets, initial-feed
+  cover selection, offset JSON parsing, `/1280/` promotion, exact CDN-host
+  validation, gallery-navigation exclusion, and direct embed/Link rendering;
 - Porngifs.com DNS lookup, direct-IP connection, SNI, Host/Referer/Accept
   headers, ID range, size floor, and 15-attempt limit;
 - Porngifs.tv AJAX parameters, headers, page range, HTML extraction, CDN host

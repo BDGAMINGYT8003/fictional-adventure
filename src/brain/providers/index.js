@@ -4,6 +4,7 @@ import { fetchHentaiCosplayXxx } from './hentai-cosplay-xxx.js';
 import { fetchNekoBot } from './nekobot.js';
 import { fetchNekosV4 } from './nekos-v4.js';
 import { fetchOBoobs, fetchOButts } from './obru.js';
+import { fetchPornPics } from './pornpics.js';
 import { fetchPorngifs } from './porngifs.js';
 import { fetchPorngifsTv } from './porngifs-tv.js';
 import { fetchPurrbot } from './purrbot.js';
@@ -20,6 +21,7 @@ const providers = Object.freeze({
   nekosv4: fetchNekosV4,
   oboobs: fetchOBoobs,
   obutts: fetchOButts,
+  pornpics: fetchPornPics,
   porngifs: fetchPorngifs,
   porngifstv: fetchPorngifsTv,
   purrbot: fetchPurrbot,

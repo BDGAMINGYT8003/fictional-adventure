@@ -113,6 +113,9 @@ function fakeInteraction(optionValues) {
 }
 
 function scenarioGroups(commandName) {
+  if (commandName === 'buttplug') {
+    return [{ group: 'Anime', options: {} }];
+  }
   if (['anal', 'ass', 'blowjob', 'boobs', 'feet', 'thigh'].includes(commandName)) {
     return [
       { group: 'Anime', options: { style: 'Anime' } },
@@ -159,6 +162,7 @@ function normalizeModernSource(source) {
     case 'abd': return `abd:endpoint=${source.endpoint}`;
     case 'obutts': return 'obutts';
     case 'oboobs': return 'oboobs';
+    case 'pornpics': return `pornpics:endpoint=${source.endpoint}`;
     case 'nekobot': return `nekobot:type=${source.type}`;
     case 'nekosv4': return `nekosv4:endpoint=${source.endpoint}`;
     case 'porngifs': return 'porngifs';
@@ -222,8 +226,15 @@ test('every reachable archived media provider call exists in the matching modern
         archivedUnion.push(...archived);
       }
 
+      const intentionalExtensions = modern.data.name === 'buttplug'
+        ? ['pornpics:endpoint=https://www.pornpics.com/butt-plug/']
+        : [];
       const currentUnion = sortedUnique(Object.values(modernGroups).flat().map(normalizeModernSource));
-      assert.deepEqual(sortedUnique(archivedUnion), currentUnion, `${modern.data.name}:all providers`);
+      assert.deepEqual(
+        sortedUnique([...archivedUnion, ...intentionalExtensions]),
+        currentUnion,
+        `${modern.data.name}:all providers`,
+      );
     }
   } finally {
     if (previousWaifuPics === undefined) delete process.env.WAIFU_PICS;

@@ -48,7 +48,10 @@ const expectedCommandSources = {
   blowjob: { Anime: [purr('blowjob/gif'), waifuPics('blowjob'), abd('blowjob'), waifuIm('oral')], Real: [nekoBot('blowjob')] },
   boobs: { Anime: [waifuIm('oppai'), nekoBot('hboobs')], Real: ['oboobs', nekoBot('boobs')] },
   breeding: { all: [abd('breeding')] },
-  buttplug: { all: [abd('buttplug')] },
+  buttplug: {
+    Anime: [abd('buttplug')],
+    Real: ['pornpics:https://www.pornpics.com/butt-plug/'],
+  },
   cages: { all: [abd('cages')] },
   cosplay: { all: ['hentaicosplayxxx', 'ahottie'] },
   cum: { all: [purr('cum/gif')] },
@@ -81,7 +84,7 @@ const expectedCommandSources = {
   yuri: { all: [purr('yuri/gif'), abd('yuri'), nekoBot('hyuri'), nekos('yuri')] },
 };
 
-test('each individual command retains its legacy provider mapping', () => {
+test('each command retains its legacy mapping plus explicit active extensions', () => {
   const actual = {};
   for (const command of [...commands.values()].filter((item) => item.kind === 'media')) {
     const groups = command.media.groups ?? { all: command.media.sources ?? [] };
@@ -181,6 +184,7 @@ test('provider manifest retains utility endpoints and URL parameters', () => {
   assert.match(ProviderEndpoint.PORNGIFS_TV, /sort_by=post_date&from=\{page\}/);
   assert.equal(ProviderEndpoint.WAIFU_IM, 'https://api.waifu.im/images');
   assert.equal(ProviderEndpoint.SEX_COM_SEARCH, 'https://www.sex.com/portal/api/gifs/search');
+  assert.equal(ProviderEndpoint.PORNPICS_BUTTPLUG_FEED, 'https://www.pornpics.com/butt-plug/');
   assert.equal(ProviderEndpoint.HENTAI_COSPLAY_FEED, 'https://hentai-cosplay-xxx.com/search/page/{page}/');
   assert.equal(ProviderEndpoint.AHOTTIE_COSPLAY_FEED, 'https://ahottie.top/tags/Cosplay?page={page}');
 });

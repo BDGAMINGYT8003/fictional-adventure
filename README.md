@@ -64,9 +64,10 @@ Utility commands:
   button that updates the existing message from the latest usage snapshot.
   Premium membership currently comes from a deployment allowlist.
 
-The original options are preserved:
+Command options preserve the original choices and include the new `/buttplug`
+style grouping:
 
-- `/anal`, `/ass`, `/blowjob`, `/boobs`, `/feet`, and `/thigh`: optional
+- `/anal`, `/ass`, `/blowjob`, `/boobs`, `/buttplug`, `/feet`, and `/thigh`: optional
   `style` choice (`Anime` or `Real`).
 - `/solo`: optional `gender` choice (`female` or `male`).
 - `/threesome`: optional `type` choice (`fff`, `ffm`, or `mmf`).
