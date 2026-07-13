@@ -12,6 +12,7 @@ const INITIAL_FEED_ITEMS = 20;
 const MAXIMUM_ITEM_COUNT = 1_000_000;
 const MAXIMUM_FEED_BYTES = 2 * 1024 * 1024;
 const MAXIMUM_OFFSET_BYTES = 512 * 1024;
+const MEDIA_DOWNLOAD_ATTEMPTS = 2;
 const IMAGE_PATH = /\.(?:avif|jpe?g|png|webp)$/i;
 const DISCORD_IMAGE_TYPES = new Set([
   'image/avif',
@@ -224,6 +225,24 @@ async function offsetCover(category, offset, context) {
   return parsePornPicsOffsetPayload(body, offset);
 }
 
+async function downloadCover(url, context) {
+  let lastError;
+  for (let attempt = 1; attempt <= MEDIA_DOWNLOAD_ATTEMPTS; attempt += 1) {
+    try {
+      return await context.http.buffer(url, {
+        headers: MEDIA_HEADERS,
+        allowedHosts: [MEDIA_HOST],
+        allowSubdomains: false,
+        minimumBytes: 1_024,
+      });
+    } catch (error) {
+      lastError = error;
+      if (error?.code !== 'NETWORK_ERROR' || attempt === MEDIA_DOWNLOAD_ATTEMPTS) throw error;
+    }
+  }
+  throw lastError;
+}
+
 export async function fetchPornPics(source, context, dependencies = defaultDependencies) {
   try {
     const category = categoryUrl(source?.endpoint);
@@ -245,12 +264,7 @@ export async function fetchPornPics(source, context, dependencies = defaultDepen
     }
     selected ??= await offsetCover(category, selectedOffset, context);
 
-    const download = await context.http.buffer(selected.url, {
-      headers: MEDIA_HEADERS,
-      allowedHosts: [MEDIA_HOST],
-      allowSubdomains: false,
-      minimumBytes: 1_024,
-    });
+    const download = await downloadCover(selected.url, context);
     const contentType = String(download.contentType).toLowerCase();
     if (!DISCORD_IMAGE_TYPES.has(contentType)) {
       throw invalidResponse('PornPics CDN returned a non-image media payload.');

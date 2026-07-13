@@ -93,6 +93,14 @@ Discord as a native attachment, so Discord never needs to fetch the PornPics
 CDN URL to render the embed. The adjacent Link button still opens the original
 validated `/1280/` asset.
 
+An occasional `NETWORK_ERROR: fetch failed` means the selected CDN connection
+failed before a usable HTTP response arrived. The adapter immediately retries
+that same selected media URL once without repeating feed discovery, choosing a
+second image, or issuing parallel work. Future diagnostics include the nested
+socket or DNS code when Node exposes one, such as `ECONNRESET`. Received HTML
+blocks, HTTP statuses, timeouts, invalid redirects, and shutdown cancellation
+are not retried.
+
 This only succeeds when the bot host itself receives the image bytes. Some
 datacenter networks receive a small HTTP 200 `text/html` “Site Unavailable”
 page from `cdni.pornpics.com` even though a residential browser can open the
@@ -101,6 +109,39 @@ uploading invalid data. It does not use proxy pools or transport-identity
 bypasses. If logs report a PornPics non-image payload, the hosting network is
 still denied by the upstream CDN; use the Anime source or a host the provider
 permits until its access policy changes.
+
+## Google AI Studio Build mode
+
+Google AI Studio Build mode runs the project in a managed development
+container and may restart the backend or pre-warm preview paths whenever code,
+dependencies, or secrets change. `Server restarting`, `Server stopped`,
+`Server started`, and `Pre-warming` are platform lifecycle messages.
+
+Configure these server-side secrets under **Settings → Secrets**:
+
+```text
+DISCORD_BOT_TOKEN=<Discord bot token>
+DISCORD_CLIENT_ID=<17-20 digit Discord application ID>
+```
+
+The legacy Replit names `BOT_TOKEN` and `CLIENT_ID` remain supported, but the
+Discord-specific names take precedence. This avoids a collision with Google
+OAuth credentials commonly also called `CLIENT_ID`. A value ending in
+`apps.googleusercontent.com`, a placeholder, or a quoted label is not a
+Discord application ID.
+
+`Unexpected token '<'` from a dashboard status fetch means the preview tried
+to parse JSON while the backend was unavailable and received an HTML fallback.
+Fix the first backend startup error; the preview message is secondary. Do not
+weaken credential validation or keep a misconfigured bot process alive merely
+to suppress the preview error.
+
+AI Studio publishing creates a Cloud Run service. This Discord bot needs one
+continuous Gateway owner, so a production service must not scale to zero or
+above one instance. Use one always-on instance with a one-instance maximum, or
+run the bot on a dedicated worker host. Build mode itself is appropriate for
+temporary testing, but its edit-driven restarts will disconnect and resume the
+Gateway normally.
 
 ## Persistent Replit console history
 

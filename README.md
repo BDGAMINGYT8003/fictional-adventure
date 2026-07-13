@@ -80,8 +80,14 @@ does not load `.env` files.
 
 Required:
 
-- `BOT_TOKEN`: Discord bot token.
-- `CLIENT_ID`: Discord application ID.
+- `DISCORD_BOT_TOKEN`: Discord bot token. Existing deployments may continue
+  using the legacy `BOT_TOKEN` alias.
+- `DISCORD_CLIENT_ID`: the 17-20 digit Discord application ID. Existing
+  deployments may continue using the legacy `CLIENT_ID` alias.
+
+The Discord-specific names take precedence when both forms exist. Prefer them
+in full-stack hosts such as Google AI Studio, where a generic `CLIENT_ID` may
+already refer to an unrelated Google OAuth credential.
 
 Provider credentials:
 
@@ -119,7 +125,7 @@ Optional:
 - `CONSOLE_LOG_FILE`: persistent plain-text console capture used by the Replit
   start supervisor; default `logs/discord-bot-console.txt`.
 
-## Run on Replit or Node.js
+## Run on Replit, Google AI Studio, or Node.js
 
 1. Add the required secrets to the environment.
 2. Install dependencies with `npm install`.
@@ -140,6 +146,25 @@ The command prints the exported `.txt` path. Both the active log and exports
 are ignored by Git and created with owner-only permissions. `npm run
 start:direct` remains available for diagnostics, but intentionally bypasses
 the persistent capture supervisor.
+
+### Google AI Studio Build mode
+
+Add `DISCORD_BOT_TOKEN` and `DISCORD_CLIENT_ID` under **Settings → Secrets**.
+They are read only by the server-side Node runtime. Build mode may restart the
+development server and pre-warm preview paths while code, dependencies, or
+secrets change; those lifecycle messages are not Discord errors.
+
+If the preview reports that a dashboard response begins with `<!doctype`, the
+backend was unavailable and the preview received its HTML fallback while the
+process was restarting. Check the backend log for the first startup error. A
+valid `DISCORD_CLIENT_ID` contains digits only; a Google OAuth client ID ending
+in `apps.googleusercontent.com` is not interchangeable.
+
+AI Studio's development container is suitable for testing. A published AI
+Studio app is a Cloud Run service, while this bot expects one continuously
+running Gateway owner. Before production deployment, configure one always-on
+instance and a maximum of one instance, or use a dedicated worker host, to
+avoid duplicate Gateway consumers and scale-to-zero disconnects.
 
 ## Emoji customization
 

@@ -15,10 +15,19 @@ function integerValue(value, fallback, { minimum, maximum }) {
   return Math.min(maximum, Math.max(minimum, parsed));
 }
 
-function required(env, name, allowMissing) {
-  const value = env[name]?.trim();
-  if (!value && !allowMissing) throw new Error(`Missing required environment variable: ${name}`);
-  return value ?? '';
+function requiredCredential(env, preferredName, legacyName, allowMissing) {
+  const preferred = env[preferredName]?.trim();
+  const legacy = env[legacyName]?.trim();
+  const value = preferred || legacy;
+  if (!value && !allowMissing) {
+    throw new Error(
+      `Missing required environment variable: ${preferredName} (legacy alias: ${legacyName})`,
+    );
+  }
+  return {
+    name: preferred ? preferredName : legacyName,
+    value: value ?? '',
+  };
 }
 
 function optionalSnowflake(value, name) {
@@ -41,11 +50,26 @@ function snowflakeList(value, name) {
 }
 
 export function loadConfig(env = process.env, { allowMissing = false } = {}) {
-  const botToken = required(env, 'BOT_TOKEN', allowMissing);
-  const clientId = required(env, 'CLIENT_ID', allowMissing);
+  const botCredential = requiredCredential(
+    env,
+    'DISCORD_BOT_TOKEN',
+    'BOT_TOKEN',
+    allowMissing,
+  );
+  const clientCredential = requiredCredential(
+    env,
+    'DISCORD_CLIENT_ID',
+    'CLIENT_ID',
+    allowMissing,
+  );
+  const botToken = botCredential.value;
+  const clientId = clientCredential.value;
 
   if (clientId && !SNOWFLAKE_PATTERN.test(clientId)) {
-    throw new Error('CLIENT_ID must be a Discord application snowflake.');
+    throw new Error(
+      `${clientCredential.name} must be a 17-20 digit Discord application ID. `
+      + 'Do not use a Google OAuth client ID or a placeholder value.',
+    );
   }
 
   const registrationMode = env.COMMAND_REGISTRATION_MODE?.trim().toLowerCase() || 'global';

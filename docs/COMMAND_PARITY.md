@@ -78,7 +78,8 @@ The tests also exercise the provider layer independently of command mapping:
 - PornPics `P_MAX` item-range discovery, exact random offsets, initial-feed
   cover selection, offset JSON parsing, `/1280/` promotion, exact CDN-host
   validation, gallery-navigation exclusion, bounded image download, native
-  attachment rendering, blocked-HTML rejection, and raw Link preservation;
+  attachment rendering, one same-URL network retry, blocked-HTML rejection,
+  and raw Link preservation;
 - Porngifs.com DNS lookup, direct-IP connection, SNI, Host/Referer/Accept
   headers, ID range, size floor, and 15-attempt limit;
 - Porngifs.tv AJAX parameters, headers, page range, HTML extraction, CDN host

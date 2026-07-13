@@ -23,6 +23,21 @@ test('configuration uses documented secure defaults', () => {
   assert.equal(config.shutdownHardTimeoutMs, 12_000);
 });
 
+test('Discord-specific credential names take precedence while legacy Replit aliases remain valid', () => {
+  const preferred = loadConfig({
+    DISCORD_BOT_TOKEN: 'preferred-token',
+    DISCORD_CLIENT_ID: '23456789012345678',
+    BOT_TOKEN: 'legacy-token',
+    CLIENT_ID: 'not-a-discord-id.apps.googleusercontent.com',
+  });
+  assert.equal(preferred.botToken, 'preferred-token');
+  assert.equal(preferred.clientId, '23456789012345678');
+
+  const legacy = loadConfig(required);
+  assert.equal(legacy.botToken, required.BOT_TOKEN);
+  assert.equal(legacy.clientId, required.CLIENT_ID);
+});
+
 test('premium user allowlist is normalized and validated', () => {
   const config = loadConfig({
     ...required,
@@ -49,4 +64,8 @@ test('guild registration requires a valid testing guild snowflake', () => {
 test('required Discord credentials fail fast', () => {
   assert.throws(() => loadConfig({}), /BOT_TOKEN/);
   assert.throws(() => loadConfig({ BOT_TOKEN: 'token' }), /CLIENT_ID/);
+  assert.throws(
+    () => loadConfig({ BOT_TOKEN: 'token', CLIENT_ID: 'google-oauth-client-id' }),
+    /Do not use a Google OAuth client ID or a placeholder value/,
+  );
 });

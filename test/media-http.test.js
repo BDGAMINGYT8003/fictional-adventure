@@ -127,6 +127,25 @@ test('media HTTP client reports invalid JSON explicitly', async () => {
   );
 });
 
+test('media HTTP client preserves the underlying network error code in diagnostics', async () => {
+  const cause = Object.assign(new Error('socket reset by peer'), { code: 'ECONNRESET' });
+  const http = new MediaHttpClient({
+    timeoutMs: 1_000,
+    maximumBytes: 1_024,
+    logger: new Logger('error'),
+    async fetchImpl() {
+      throw new TypeError('fetch failed', { cause });
+    },
+  });
+
+  await assert.rejects(
+    http.buffer('https://cdn.example/media.jpg', { allowedHosts: ['cdn.example'] }),
+    (error) => error.code === 'NETWORK_ERROR'
+      && error.message === 'fetch failed (ECONNRESET)'
+      && error.cause?.cause === cause,
+  );
+});
+
 test('media HTTP client propagates graceful-shutdown cancellation', async () => {
   const shutdown = new AbortController();
   const http = new MediaHttpClient({

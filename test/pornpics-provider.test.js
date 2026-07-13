@@ -10,6 +10,7 @@ import {
   PORNPICS_MAXIMUM_FEED_BYTES,
   PORNPICS_MAXIMUM_OFFSET_BYTES,
 } from '../src/brain/providers/pornpics.js';
+import { MediaProviderError } from '../src/brain/providers/errors.js';
 import { Logger } from '../src/lib/logger.js';
 
 const CATEGORY_URL = 'https://www.pornpics.com/butt-plug/';
@@ -134,6 +135,49 @@ test('PornPics uses the already-loaded initial feed for offsets below twenty', a
   assert.equal(result.fileName, 'media.jpg');
 });
 
+test('PornPics retries one transient media network failure without repeating feed discovery', async () => {
+  let feedRequests = 0;
+  let mediaRequests = 0;
+  const result = await fetchPornPics(
+    { endpoint: CATEGORY_URL },
+    providerContext({
+      async text() {
+        feedRequests += 1;
+        return categoryPage({ itemCount: 1, pageCount: 1 });
+      },
+      async buffer(url) {
+        mediaRequests += 1;
+        if (mediaRequests === 1) {
+          throw Object.assign(new Error('fetch failed'), { code: 'NETWORK_ERROR' });
+        }
+        return jpegDownload(url);
+      },
+    }),
+    { randomInteger() { return 0; } },
+  );
+
+  assert.equal(feedRequests, 1);
+  assert.equal(mediaRequests, 2);
+  assert.equal(result.url, thumbnail(1280, 0));
+  assert.equal(result.fileName, 'media.jpg');
+});
+
+test('PornPics limits persistent network failures to two media attempts', async () => {
+  let mediaRequests = 0;
+  await assert.rejects(fetchPornPics(
+    { endpoint: CATEGORY_URL },
+    providerContext({
+      async text() { return categoryPage({ itemCount: 1, pageCount: 1 }); },
+      async buffer() {
+        mediaRequests += 1;
+        throw new MediaProviderError('fetch failed', { code: 'NETWORK_ERROR' });
+      },
+    }),
+    { randomInteger() { return 0; } },
+  ), (error) => error.code === 'NETWORK_ERROR');
+  assert.equal(mediaRequests, 2);
+});
+
 test('PornPics aligns a high random offset to the first JSON item without gallery navigation', async () => {
   const requests = [];
   const offsetItem = {
@@ -219,11 +263,15 @@ test('PornPics rejects anti-bot HTML, empty arrays, and foreign cover hosts', as
 });
 
 test('PornPics rejects CDN block pages and insecure or foreign media redirects', async () => {
+  let mediaRequests = 0;
   const fetchWithDownload = (download) => fetchPornPics(
     { endpoint: CATEGORY_URL },
     providerContext({
       async text() { return categoryPage({ itemCount: 1, pageCount: 1 }); },
-      async buffer(url) { return download(url); },
+      async buffer(url) {
+        mediaRequests += 1;
+        return download(url);
+      },
     }),
     { randomInteger() { return 0; } },
   );
@@ -233,6 +281,7 @@ test('PornPics rejects CDN block pages and insecure or foreign media redirects',
     contentType: 'text/html',
     finalUrl: url,
   })), (error) => error.code === 'INVALID_RESPONSE');
+  assert.equal(mediaRequests, 1, 'an HTML policy block must never be retried');
 
   for (const finalUrl of [
     'http://cdni.pornpics.com/1280/3/17/1/image.jpg',
@@ -243,6 +292,7 @@ test('PornPics rejects CDN block pages and insecure or foreign media redirects',
       (error) => error.code === 'INVALID_URL',
     );
   }
+  assert.equal(mediaRequests, 3, 'invalid redirect responses must never be retried');
 });
 
 test('/buttplug isolates explicit Real and Anime selections and preserves them in Refresh state', async () => {

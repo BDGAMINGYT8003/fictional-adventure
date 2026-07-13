@@ -29,6 +29,12 @@ function assertSize(response, maximumBytes) {
   }
 }
 
+function networkErrorMessage(error) {
+  const message = error?.message || 'Media request failed.';
+  const code = error?.cause?.code || error?.code;
+  return code && !message.includes(String(code)) ? `${message} (${code})` : message;
+}
+
 export class MediaHttpClient {
   constructor({ timeoutMs, maximumBytes, logger, fetchImpl = globalThis.fetch, signal = null }) {
     this.timeoutMs = timeoutMs;
@@ -163,7 +169,10 @@ export class MediaHttpClient {
         );
       }
       if (error instanceof MediaProviderError) throw error;
-      throw new MediaProviderError(error?.message || 'Media request failed.', { code: 'NETWORK_ERROR', cause: error });
+      throw new MediaProviderError(networkErrorMessage(error), {
+        code: 'NETWORK_ERROR',
+        cause: error,
+      });
     } finally {
       clearTimeout(timeout);
       externalSignal?.removeEventListener('abort', abort);

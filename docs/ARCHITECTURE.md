@@ -129,7 +129,9 @@ responses and unsafe redirects, and uploads successful bytes as a native
 Discord attachment. The Link button keeps the validated raw `/1280/` URL. If
 the CDN returns a datacenter block page, the adapter fails closed and the
 normal command fallback may continue; the runtime does not add proxying, TLS
-impersonation, speculative probes, or background work.
+impersonation, speculative probes, or background work. One immediate retry of
+the same media URL is permitted only after a transport-level `NETWORK_ERROR`;
+it never repeats feed discovery or retries a received response.
 
 Each provider also has an independent consecutive-failure circuit. It opens
 for a randomized 30–120 seconds after three failures. Once the interval
