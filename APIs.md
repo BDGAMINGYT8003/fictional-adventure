@@ -245,6 +245,29 @@ and uploaded as a native Discord attachment so the embed renders immediately.
 The Link button retains the resolved raw media URL. No browser automation,
 prefetching, speculative request, or background crawl is used.
 
+## 12. PornPics butt-plug category feed
+
+The Real source for `/buttplug` uses the public category feed at:
+
+`https://www.pornpics.com/butt-plug/`
+
+Each execution selects a cryptographically random item index from `0` through
+`999`. For indices `0..19`, the already-rendered category HTML is requested once
+and only image elements inside `/galleries/...` links are considered. For
+indices `20..999`, one request is sent to the same endpoint with
+`offset={selectedIndex}` and the first JSON array item is used. The response
+fields are `g_url`, `t_url`, `t_url_460`, `gid`, and `mid`.
+
+The adapter never requests `g_url` or downloads media bytes. It validates the
+exact `cdni.pornpics.com` media hostname and promotes the thumbnail path from
+`/300/` or `/460/` to `/1280/` while retaining the shard directories and hashed
+filename. The resulting high-resolution CDN URL is placed directly in the
+Discord embed; the Link button points to the validated gallery URL. Category
+responses are bounded to 2 MiB, redirects remain restricted to PornPics hosts,
+and malformed JSON, foreign hosts, insecure URLs, and unknown media paths are
+rejected. No browser automation, gallery crawl, CDN binary fetch, proxy, or
+transcoding step is used.
+
 ## Command-to-provider preservation
 
 Every command source is explicit in its own module. The provider parity tests
@@ -255,6 +278,11 @@ Porngifs.com, NekoBot `pgif`, and Porngifs.tv before fallback is applied.
 `/cosplay` is a new active command rather than an archived provider mapping.
 Its primary/fallback order and one-feed extraction contracts are covered by
 dedicated executable tests.
+
+The Real `/buttplug` PornPics source is also an intentional active extension.
+Its archived Anime N-SFW source remains intact, and dedicated tests cover the
+new option grouping, exact offset range, feed-only extraction, and 1280px URL
+promotion.
 
 The experimental endpoint studies in `archive/legacy/studies/` are preserved
 as research documents. They were not active command implementations in the old

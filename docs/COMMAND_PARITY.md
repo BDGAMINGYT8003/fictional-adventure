@@ -17,7 +17,7 @@ compares them with the corresponding modern command declaration.
 | `/blowjob` | Anime: Purrbot `blowjob/gif`, Waifu.pics `blowjob`, N-SFW `blowjob`, Waifu.im `oral`; Real: NekoBot `blowjob` |
 | `/boobs` | Anime: Waifu.im `oppai`, NekoBot `hboobs`; Real: Oboobs, NekoBot `boobs` |
 | `/breeding` | N-SFW `breeding` |
-| `/buttplug` | N-SFW `buttplug` |
+| `/buttplug` | Anime (archived): N-SFW `buttplug`; Real (active extension): PornPics butt-plug category feed |
 | `/cages` | N-SFW `cages` |
 | `/cosplay` | New active command: Hentai-cosplay-xxx.com feed, then Ahottie feed only as fallback |
 | `/cum` | Purrbot `cum/gif` |
@@ -59,6 +59,10 @@ intentionally not an application command.
 extension and is excluded from the byte-for-byte legacy execution comparison;
 separate tests enforce its ordered fallback and scraper contracts.
 
+The archived `/buttplug` execution remains compared directly with the modern
+Anime group. Its Real PornPics group is an intentional additive source with no
+archived counterpart and is covered by separate command/provider tests.
+
 ## Provider transport verification
 
 The tests also exercise the provider layer independently of command mapping:
@@ -77,6 +81,8 @@ The tests also exercise the provider layer independently of command mapping:
   headers, ID range, size floor, and 15-attempt limit;
 - Porngifs.tv AJAX parameters, headers, page range, HTML extraction, CDN host
   validation, size floor, and native content type;
+- PornPics exact 1,000-item index range, single-feed-request behavior,
+  gallery-card-only extraction, and `/300|460/` to `/1280/` promotion;
 - Purrbot, Waifu.pics, and Nekos v4 response shapes.
 
 Run `npm run validate` to repeat the complete audit.

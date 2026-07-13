@@ -121,6 +121,12 @@ extract media directly from that feed. They never load gallery or album pages.
 Downloaded image bytes are re-uploaded as native Discord attachments while the
 Link button keeps the validated raw source URL.
 
+The Real `/buttplug` provider follows the same feed-only constraint. It selects
+one exact index across PornPics' 1,000-item category window, reads either the
+initial gallery cards or the offset JSON feed, and promotes the selected cover
+path to the CDN's `/1280/` variant. It does not open the gallery or fetch the
+CDN binary; Discord receives the validated direct media URL.
+
 Each provider also has an independent consecutive-failure circuit. It opens
 for a randomized 30–120 seconds after three failures. Once the interval
 elapses, only one genuine user request becomes a half-open probe; concurrent

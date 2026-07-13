@@ -9,6 +9,13 @@ import { fetchNekosV4 } from '../src/brain/providers/nekos-v4.js';
 import { fetchOBoobs, fetchOButts } from '../src/brain/providers/obru.js';
 import { fetchPorngifs } from '../src/brain/providers/porngifs.js';
 import { fetchPorngifsTv } from '../src/brain/providers/porngifs-tv.js';
+import {
+  fetchPornPics,
+  GALLERY_LIMIT,
+  INITIAL_GALLERY_COUNT,
+  MAXIMUM_FEED_BYTES,
+  pornPicsHighResolutionUrl,
+} from '../src/brain/providers/pornpics.js';
 import { fetchPurrbot } from '../src/brain/providers/purrbot.js';
 import { fetchSexCom } from '../src/brain/providers/sexcom.js';
 import { fetchWaifuPics } from '../src/brain/providers/waifu-pics.js';
@@ -183,6 +190,96 @@ test('Sex.com retains every query field, the exact browser header, and URL conve
   });
   assert.equal(result.url, 'https://imagex1.sx.cdn.live/images/example.gif');
   assert.equal(result.watchUrl, 'https://www.sex.com/pin/987/');
+});
+
+test('PornPics offset feed selects the exact random gallery and extrapolates its 1280px cover', async () => {
+  const requests = [];
+  const result = await fetchPornPics({}, context({
+    async text(url, options) {
+      requests.push({ url, options });
+      return JSON.stringify([
+        {
+          gid: 15_496_516,
+          g_url: 'https://www.pornpics.com/galleries/example-gallery-15496516/',
+          t_url: 'https://cdni.pornpics.com/300/3/17/15496516/15496516_007_ea75.jpg',
+          t_url_460: 'https://cdni.pornpics.com/460/3/17/15496516/15496516_007_ea75.jpg',
+        },
+        {
+          gid: 99,
+          g_url: 'https://www.pornpics.com/galleries/unselected-gallery-99/',
+          t_url_460: 'https://cdni.pornpics.com/460/1/1/99/99_001_hash.jpg',
+        },
+      ]);
+    },
+  }), {
+    randomInteger(minimum, maximum) {
+      assert.deepEqual([minimum, maximum], [0, GALLERY_LIMIT - 1]);
+      return 543;
+    },
+  });
+
+  assert.equal(requests.length, 1, 'the provider must not enter the selected gallery');
+  assert.equal(requests[0].url, 'https://www.pornpics.com/butt-plug/');
+  assert.deepEqual(requests[0].options.query, { offset: 543 });
+  assert.deepEqual(requests[0].options.allowedHosts, ['pornpics.com']);
+  assert.equal(requests[0].options.maximumBytes, MAXIMUM_FEED_BYTES);
+  assert.equal(requests[0].options.headers.Accept, 'application/json');
+  assert.equal(result.id, '15496516');
+  assert.equal(
+    result.url,
+    'https://cdni.pornpics.com/1280/3/17/15496516/15496516_007_ea75.jpg',
+  );
+  assert.equal(
+    result.watchUrl,
+    'https://www.pornpics.com/galleries/example-gallery-15496516/',
+  );
+});
+
+test('PornPics initial category page selects only gallery-card thumbnails in DOM order', async () => {
+  const cards = Array.from({ length: INITIAL_GALLERY_COUNT }, (_value, index) => `
+    <a class="rel-link" href="/galleries/gallery-${index}/">
+      <img
+        src="https://cdni.pornpics.com/300/7/94/${index}/${index}_cover_hash.jpg"
+        data-src="https://cdni.pornpics.com/460/7/94/${index}/${index}_cover_hash.jpg"
+      >
+    </a>
+  `).join('');
+  const requests = [];
+  const result = await fetchPornPics({}, context({
+    async text(url, options) {
+      requests.push({ url, options });
+      return `
+        <img src="https://cdni.pornpics.com/460/0/0/advert/advert.jpg">
+        ${cards}
+        <a href="https://example.com/galleries/not-pornpics/">
+          <img src="https://cdni.pornpics.com/460/0/0/wrong/wrong.jpg">
+        </a>
+      `;
+    },
+  }), {
+    randomInteger() { return 7; },
+  });
+
+  assert.equal(requests.length, 1, 'the provider must use only the category document');
+  assert.equal(requests[0].url, 'https://www.pornpics.com/butt-plug/');
+  assert.equal(requests[0].options.query, undefined);
+  assert.equal(requests[0].options.headers.Accept, 'text/html,application/xhtml+xml');
+  assert.equal(result.id, '7');
+  assert.equal(result.url, 'https://cdni.pornpics.com/1280/7/94/7/7_cover_hash.jpg');
+  assert.equal(result.watchUrl, 'https://www.pornpics.com/galleries/gallery-7/');
+});
+
+test('PornPics high-resolution conversion rejects non-CDN and non-thumbnail URLs', () => {
+  assert.equal(
+    pornPicsHighResolutionUrl('https://cdni.pornpics.com/300/1/2/3/cover.webp'),
+    'https://cdni.pornpics.com/1280/1/2/3/cover.webp',
+  );
+  assert.equal(
+    pornPicsHighResolutionUrl('https://cdni.pornpics.com/1280/1/2/3/cover.jpg'),
+    'https://cdni.pornpics.com/1280/1/2/3/cover.jpg',
+  );
+  assert.equal(pornPicsHighResolutionUrl('https://attacker.example/460/1/2/3/cover.jpg'), null);
+  assert.equal(pornPicsHighResolutionUrl('https://cdni.pornpics.com/original/1/2/3/cover.jpg'), null);
 });
 
 test('Porngifs.com retains DNS/SNI routing, headers, ranges, and retry count', async () => {
